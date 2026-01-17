@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:convert'; // For base64Decode
+import 'package:draft_asgn/PetProfileScreen.dart';
 
 
 
@@ -150,7 +151,7 @@ Widget _buildHeader(BuildContext context) {
   );
 }
 
-  // ================= PETS =================
+// ================= PETS =================
 Widget _buildPetsSection() {
   final user = FirebaseAuth.instance.currentUser;
 
@@ -191,7 +192,7 @@ Widget _buildPetsSection() {
               pets.map((pet) {
                 final petData = pet.data() as Map<String, dynamic>;
 
-                // Decode Base64 if it exists
+                // Decode Base64 image if available
                 ImageProvider? petImageProvider;
                 if (petData['profilePicBase64'] != null) {
                   try {
@@ -203,40 +204,68 @@ Widget _buildPetsSection() {
                   }
                 }
 
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 28,
-                        backgroundColor: Colors.grey[300],
-                        backgroundImage: petImageProvider,
-                        child: petImageProvider == null
-                            ? const Icon(Icons.pets, color: Colors.white)
-                            : null,
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => PetProfileScreen(petData: petData),
                       ),
-                      const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            petData['name'] ?? 'Unnamed Pet',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
+                    );
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 4,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            image: petImageProvider != null
+                                     ? DecorationImage(
+                                      image: petImageProvider,
+                                      fit: BoxFit.cover,
+                                     )
+                                     : null,
+                                     color: Colors.grey[300],
+                          ),
+
+                          child: petImageProvider == null
+                              ? const Icon(Icons.pets, color: Colors.white)
+                              : null,
+                        ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              petData['name'] ?? 'Unnamed Pet',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
                             ),
-                          ),
-                          Text(
-                            petData['species'] ?? 'Unknown Species',
-                            style: const TextStyle(color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                    ],
+                            Text(
+                              petData['species'] ?? 'Unknown Species',
+                              style: const TextStyle(color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 );
               }),
@@ -262,6 +291,10 @@ Widget _buildPetsSection() {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: HomeScreen.brown,
                   foregroundColor: HomeScreen.lightCream,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
                 ),
               ),
             ),
