@@ -1,11 +1,16 @@
 import 'package:draft_asgn/AddPetScreen.dart';
+import 'package:draft_asgn/BoardingScreen.dart';
 import 'package:draft_asgn/LogInScreen.dart';
+import 'package:draft_asgn/TrainingSreen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:convert'; // For base64Decode
 import 'package:draft_asgn/PetProfileScreen.dart';
+import 'package:draft_asgn/GroomingScreen.dart';
+import 'package:draft_asgn/VetScreen.dart';
+
 
 
 
@@ -315,68 +320,125 @@ Widget _buildPetsSection() {
 
   // ================= SERVICES =================
   Widget _buildServicesSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Services',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 12),
-        GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          children: const [
-            _ServiceCard(icon: Icons.cut, label: 'Grooming'),
-            _ServiceCard(icon: Icons.medical_services, label: 'Vet'),
-            _ServiceCard(icon: Icons.home, label: 'Boarding'),
-            _ServiceCard(icon: Icons.school, label: 'Training'),
-          ],
-        ),
-      ],
-    );
-  }
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Text(
+        'Services',
+        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      ),
+      const SizedBox(height: 12),
+      GridView.count(
+        crossAxisCount: 2,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+        children: [
+          _ServiceCard(
+            icon: Icons.cut,
+            label: 'Grooming',
+            onTap: () {
+              // TODO: navigate to Grooming screen later
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_)=> const GroomingScreen()),
+                );
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Open Grooming page')),
+              );
+            },
+          ),
+          _ServiceCard(
+            icon: Icons.medical_services,
+            label: 'Vet',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_)=> const VetScreen()),
+                );
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Open Vet Page')),
+              );
+            },
+          ),
+          _ServiceCard(
+            icon: Icons.home,
+            label: 'Boarding',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_)=> const BoardingScreen()),
+                );
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Open Boarding Page')),
+              );
+            },
+          ),
+          _ServiceCard(
+            icon: Icons.school,
+            label: 'Training',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_)=> const TrainingScreen()),
+                );
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Open Training page')),
+              );
+            },
+          ),
+        ],
+      ),
+    ],
+  );
+}
+
 }
 
 // ================= SERVICE CARD =================
 class _ServiceCard extends StatelessWidget {
   final IconData icon;
   final String label;
+  final VoidCallback onTap;
 
   const _ServiceCard({
     required this.icon,
     required this.label,
+    required this.onTap,
   });
 
   static const Color brown = Color(0xFF522D0B);
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
         borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: brown,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(icon, color: Colors.white),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 18),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: brown,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(icon, color: Colors.white),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                label,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-        ],
+        ),
       ),
     );
   }
