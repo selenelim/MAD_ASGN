@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:convert'; // For base64Decode
 
 
 
@@ -150,7 +151,7 @@ Widget _buildHeader(BuildContext context) {
 }
 
   // ================= PETS =================
-  Widget _buildPetsSection() {
+Widget _buildPetsSection() {
   final user = FirebaseAuth.instance.currentUser;
 
   if (user == null) {
@@ -189,6 +190,19 @@ Widget _buildHeader(BuildContext context) {
             petWidgets.addAll(
               pets.map((pet) {
                 final petData = pet.data() as Map<String, dynamic>;
+
+                // Decode Base64 if it exists
+                ImageProvider? petImageProvider;
+                if (petData['profilePicBase64'] != null) {
+                  try {
+                    petImageProvider = MemoryImage(
+                      base64Decode(petData['profilePicBase64']),
+                    );
+                  } catch (e) {
+                    petImageProvider = null;
+                  }
+                }
+
                 return Container(
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.all(12),
@@ -198,22 +212,26 @@ Widget _buildHeader(BuildContext context) {
                   ),
                   child: Row(
                     children: [
-                      const CircleAvatar(
+                      CircleAvatar(
                         radius: 28,
-                        child: Icon(Icons.pets),
+                        backgroundColor: Colors.grey[300],
+                        backgroundImage: petImageProvider,
+                        child: petImageProvider == null
+                            ? const Icon(Icons.pets, color: Colors.white)
+                            : null,
                       ),
                       const SizedBox(width: 12),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            petData['name']?? 'Unnamed Pet',
+                            petData['name'] ?? 'Unnamed Pet',
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           Text(
-                            petData['species']??'Unknown Species',
+                            petData['species'] ?? 'Unknown Species',
                             style: const TextStyle(color: Colors.grey),
                           ),
                         ],
@@ -226,9 +244,7 @@ Widget _buildHeader(BuildContext context) {
           }
 
           // Always show the Add Pet button
-          petWidgets.add(
-            const SizedBox(height: 16),
-          );
+          petWidgets.add(const SizedBox(height: 16));
           petWidgets.add(
             SizedBox(
               width: double.infinity,

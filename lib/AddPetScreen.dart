@@ -1,7 +1,10 @@
+import 'dart:io';
+import 'dart:convert';
 import 'package:draft_asgn/HomeScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image_picker/image_picker.dart';
 
 class AddPetScreen extends StatefulWidget {
   const AddPetScreen({super.key});
@@ -23,6 +26,18 @@ class _AddPetScreenState extends State<AddPetScreen> {
 
   bool isLoading = false;
 
+  File? petImage; // Selected image
+  final ImagePicker _picker = ImagePicker();
+
+  Future<void> _pickImage() async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      setState(() {
+        petImage = File(image.path);
+      });
+    }
+  }
+
   Future<void> _savePet() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -38,17 +53,24 @@ class _AddPetScreenState extends State<AddPetScreen> {
 
     setState(() => isLoading = true);
 
+    String? imageBase64;
+    if (petImage != null) {
+      final bytes = await petImage!.readAsBytes();
+      imageBase64 = base64Encode(bytes); // Convert image to string
+    }
+
     await FirebaseFirestore.instance
         .collection('users')
         .doc(user.uid)
         .collection('pets')
         .add({
       'name': nameController.text.trim(),
-      'species': species!, // safe after null check
+      'species': species!,
       'breed': breedController.text.trim(),
-      'size': size!,       // safe after null check
+      'size': size!,
       'age': ageController.text.trim(),
       'notes': notesController.text.trim(),
+      'profilePicBase64': imageBase64, // Save as Base64 string
       'createdAt': Timestamp.now(),
     });
 
@@ -87,6 +109,40 @@ class _AddPetScreenState extends State<AddPetScreen> {
     );
   }
 
+  Widget _label(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16, bottom: 8),
+      child: Text(
+        text,
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  Widget _textField(
+    TextEditingController controller,
+    String hint, {
+    bool required = false,
+    int maxLines = 1,
+  }) {
+    return TextFormField(
+      controller: controller,
+      maxLines: maxLines,
+      validator: required
+          ? (value) => value == null || value.isEmpty ? 'Required' : null
+          : null,
+      decoration: InputDecoration(
+        hintText: hint,
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -106,7 +162,6 @@ class _AddPetScreenState extends State<AddPetScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Text above form
             const Text(
               'Tell us about your pet 🐾',
               style: TextStyle(
@@ -127,6 +182,24 @@ class _AddPetScreenState extends State<AddPetScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Pet image picker
+                  Center(
+                    child: GestureDetector(
+                      onTap: _pickImage,
+                      child: CircleAvatar(
+                        radius: 50,
+                        backgroundColor: Colors.grey[300],
+                        backgroundImage:
+                            petImage != null ? FileImage(petImage!) : null,
+                        child: petImage == null
+                            ? const Icon(Icons.add_a_photo,
+                                size: 40, color: Colors.white)
+                            : null,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
                   _label('Pet Name *'),
                   _textField(nameController, 'e.g. Max, Bella', required: true),
 
@@ -150,7 +223,8 @@ class _AddPetScreenState extends State<AddPetScreen> {
                   ),
 
                   _label('Breed (optional)'),
-                  _textField(breedController, 'e.g. Golden Retriever, British Shorthair'),
+                  _textField(
+                      breedController, 'e.g. Golden Retriever, British Shorthair'),
 
                   _label('Size *'),
                   Row(
@@ -182,7 +256,8 @@ class _AddPetScreenState extends State<AddPetScreen> {
                   _textField(ageController, 'e.g. 2 years', required: true),
 
                   _label('Notes (optional)'),
-                  _textField(notesController, 'Any allergies or temperament...', maxLines: 3),
+                  _textField(notesController, 'Any allergies or temperament...',
+                      maxLines: 3),
 
                   const SizedBox(height: 30),
 
@@ -198,47 +273,17 @@ class _AddPetScreenState extends State<AddPetScreen> {
                           borderRadius: BorderRadius.circular(30),
                         ),
                       ),
-                      child: const Text('Save Pet'),
+                      child: isLoading
+                          ? const CircularProgressIndicator(
+                              color: Colors.white,
+                            )
+                          : const Text('Save Pet'),
                     ),
                   ),
                 ],
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _label(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 16, bottom: 8),
-      child: Text(
-        text,
-        style: const TextStyle(fontWeight: FontWeight.bold),
-      ),
-    );
-  }
-
-  Widget _textField(
-    TextEditingController controller,
-    String hint, {
-    bool required = false,
-    int maxLines = 1,
-  }) {
-    return TextFormField(
-      controller: controller,
-      maxLines: maxLines,
-      validator: required
-          ? (value) => value == null || value.isEmpty ? 'Required' : null
-          : null,
-      decoration: InputDecoration(
-        hintText: hint,
-        filled: true,
-        fillColor: Colors.white,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
         ),
       ),
     );
