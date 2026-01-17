@@ -132,64 +132,98 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ================= PETS =================
   Widget _buildPetsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "$userName's Pets",
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+  // Example list of pets
+  final pets = [
+    {'name': 'Max', 'type': 'Cat', 'image': 'assets/img/cat.jpeg'},
+    {'name': 'Buddy', 'type': 'Dog', 'image': 'assets/img/dog.jpeg'},
+    {'name': 'Luna', 'type': 'Cat', 'image': 'assets/img/cat2.jpeg'},
+    {'name': 'Luna', 'type': 'Cat', 'image': 'assets/img/cat2.jpeg'},
+  ];
+
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        "$userName's Pets",
+        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      ),
+      const SizedBox(height: 12),
+      
+      // Grid with 1 pet per row
+      GridView.builder(
+        itemCount: pets.length,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 1, // 1 pet per row
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          childAspectRatio: 5, // adjust height
         ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Row(
-            children: [
-              const CircleAvatar(
-                radius: 24,
-                backgroundImage: AssetImage('assets/img/cat.jpeg'),
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text(
-                    'Max',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    'Cat · Cat',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ],
-              ),
-              const Spacer(),
-              const Icon(Icons.pets, color: HomeScreen.brown),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        OutlinedButton.icon(
-          onPressed: () {},
+        itemBuilder: (context, index) {
+          final pet = pets[index];
+          return Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            padding: const EdgeInsets.all(8),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 30,
+                  backgroundImage: AssetImage(pet['image']!),
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      pet['name']!,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      '${pet['type']} · ${pet['type']}',
+                      style: const TextStyle(color: Colors.grey, fontSize: 12),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                const Icon(Icons.pets, color: HomeScreen.brown),
+              ],
+            ),
+          );
+        },
+      ),
+
+      const SizedBox(height: 12),
+
+      // Add Pet button on its own row
+      SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed: () {
+            // TODO: Navigate to Add Pet screen
+          },
           icon: const Icon(Icons.add, color: HomeScreen.brown),
           label: const Text(
-            'Add Another Pet',
+            'Add Pet',
             style: TextStyle(color: HomeScreen.brown),
           ),
           style: OutlinedButton.styleFrom(
             side: const BorderSide(color: HomeScreen.brown),
-            minimumSize: const Size(double.infinity, 48),
+            padding: const EdgeInsets.symmetric(vertical: 16),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
           ),
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
+}
+
 
   // ================= SERVICES =================
   Widget _buildServicesSection() {

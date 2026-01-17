@@ -10,6 +10,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController confirmPasswordController = TextEditingController();
+  final TextEditingController usernameController = TextEditingController();
+
 
   bool passwordVisible = false;
   bool confirmPasswordVisible = false;
@@ -50,6 +52,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   style: TextStyle(color: Colors.grey[700]),
                 ),
                 SizedBox(height: 24),
+                TextField(
+                  controller: usernameController,
+                  decoration: InputDecoration(
+                    labelText: 'Username',
+                    prefixIcon: Icon(Icons.account_circle_outlined),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 16),
+
                 TextField(
                   controller: emailController,
                   decoration: InputDecoration(
@@ -112,8 +126,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       final email = emailController.text.trim();
                       final password = passwordController.text.trim();
                       final confirmPassword = confirmPasswordController.text.trim();
+                      final username = usernameController.text.trim();
 
-                      if (email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+                      if (email.isEmpty || password.isEmpty || confirmPassword.isEmpty||username.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Please fill all fields')),
                         );
@@ -128,10 +143,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       }
 
                       try {
-                        await FirebaseAuth.instance.createUserWithEmailAndPassword(
+                        UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
                           email: email,
                           password: password,
                         );
+
+                        await userCredential.user!.updateDisplayName(username);
+                        
 
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Account created!')),
