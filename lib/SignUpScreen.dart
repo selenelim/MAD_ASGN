@@ -25,7 +25,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         centerTitle: true,
         title: Image.asset(
           'assets/img/pawpal_logo.png',
-          height: 250,
+          height: 65,
         ),
       ),
       backgroundColor: Color.fromRGBO(253, 251, 215, 1),

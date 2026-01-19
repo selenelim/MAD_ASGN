@@ -61,7 +61,7 @@ class PetProfileScreen extends StatelessWidget {
             centerTitle: true,
             title: Image.asset(
               'assets/img/pawpal_logo.png',
-              height: 250,
+              height: 65,
             ),
             backgroundColor: Colors.transparent,
           ),
