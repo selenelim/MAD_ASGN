@@ -1,18 +1,17 @@
+import 'dart:convert'; // base64Decode
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:draft_asgn/AddPetScreen.dart';
 import 'package:draft_asgn/BoardingScreen.dart';
+import 'package:draft_asgn/GroomingScreen.dart';
 import 'package:draft_asgn/LogInScreen.dart';
+import 'package:draft_asgn/PetProfileScreen.dart';
 import 'package:draft_asgn/TrainingSreen.dart';
+import 'package:draft_asgn/VetScreen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'dart:convert'; // For base64Decode
-import 'package:draft_asgn/PetProfileScreen.dart';
-import 'package:draft_asgn/GroomingScreen.dart';
-import 'package:draft_asgn/VetScreen.dart';
-
-
-
+import 'package:draft_asgn/ProfileScreen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -26,12 +25,11 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String userName = '';
-  bool _showLogout = false;
 
   @override
   void initState() {
     super.initState();
-    _loadUserName(); // load name from FirebaseAuth only
+    _loadUserName();
   }
 
   Future<void> _loadUserName() async {
@@ -39,7 +37,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (user != null) {
       setState(() {
-        // Use displayName if available, otherwise fallback to email prefix
         userName = user.displayName ?? user.email?.split('@')[0] ?? 'there';
       });
     } else {
@@ -47,6 +44,19 @@ class _HomeScreenState extends State<HomeScreen> {
         userName = 'there';
       });
     }
+  }
+
+  Future<void> _logout(BuildContext context) async {
+    await FirebaseAuth.instance.signOut();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('rememberMe', false);
+
+    if (!context.mounted) return;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => LoginScreen()),
+      (route) => false,
+    );
   }
 
   @override
@@ -72,337 +82,323 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ================= HEADER =================
-Widget _buildHeader(BuildContext context) {
-  return Container(
-    padding: const EdgeInsets.all(20),
-    decoration: BoxDecoration(
-      color: HomeScreen.brown,
-      borderRadius: BorderRadius.circular(24),
-    ),
-    child: Column(
+  Widget _buildHeader(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: HomeScreen.brown,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Top row: logo + profile menu
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Image.asset(
+                'assets/img/pawpal_logo_cream.png',
+                height: 45,
+              ),
+
+              PopupMenuButton<String>(
+                icon: const CircleAvatar(
+                  backgroundColor: Colors.white,
+                  child: Icon(Icons.person, color: HomeScreen.brown),
+                ),
+                offset: const Offset(0, 50),
+                color: HomeScreen.lightCream,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: 'profile',
+                    child: Row(
+                      children: const [
+                        Icon(Icons.account_circle, color: HomeScreen.brown),
+                        SizedBox(width: 8),
+                        Text(
+                          'My Profile',
+                          style: TextStyle(color: HomeScreen.brown),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuDivider(),
+                  PopupMenuItem(
+                    value: 'logout',
+                    child: Row(
+                      children: const [
+                        Icon(Icons.logout, color: HomeScreen.brown),
+                        SizedBox(width: 8),
+                        Text(
+                          'Logout',
+                          style: TextStyle(color: HomeScreen.brown),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                onSelected: (value) async {
+                  if (value == 'profile') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                    );
+                    return;
+                  }
+
+                  if (value == 'logout') {
+                    await _logout(context);
+                    return;
+                  }
+                },
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 24),
+
+          Text(
+            'Hello $userName 👋',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Welcome back to PawPal',
+            style: TextStyle(color: Colors.white70),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ================= PETS =================
+  Widget _buildPetsSection() {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      return const Text('Not logged in');
+    }
+
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Top row: logo + profile menu
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                Image.asset(
-                  'assets/img/pawpal_logo_cream.png',
-                  height: 45,
-                ),
-                const SizedBox(width: 8),
-              ],
-            ),
-            // Profile avatar with dropdown menu
-            PopupMenuButton(
-              icon: const CircleAvatar(
-                backgroundColor: Colors.white,
-                child: Icon(Icons.person, color: HomeScreen.brown),
-              ),
-              offset: const Offset(0, 50),
-              color: HomeScreen.lightCream,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14)
-              ),
-              itemBuilder: (context) => [
-                PopupMenuItem(
-                  value: 'logout',
-                  child: Row(
-                    children: const [
-                      Icon(Icons.logout, color: HomeScreen.brown),
-                      SizedBox(width: 8),
-                      Text(
-                        'Logout',
-                        style: TextStyle(color: HomeScreen.brown),
+        Text(
+          "$userName's Pets",
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+
+        StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .collection('pets')
+              .orderBy('createdAt', descending: true)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            final petWidgets = <Widget>[];
+
+            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+              petWidgets.add(
+                const Text('No pets yet. Add your first pet!'),
+              );
+            } else {
+              final pets = snapshot.data!.docs;
+
+              petWidgets.addAll(
+                pets.map((pet) {
+                  final petData = pet.data() as Map<String, dynamic>;
+                  final petId = pet.id;
+
+                  ImageProvider? petImageProvider;
+                  final b64 = petData['profilePicBase64'];
+                  if (b64 is String && b64.isNotEmpty) {
+                    try {
+                      petImageProvider = MemoryImage(base64Decode(b64));
+                    } catch (_) {
+                      petImageProvider = null;
+                    }
+                  }
+
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => PetProfileScreen(
+                            userId: user.uid,
+                            petId: petId,
+                          ),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Colors.black12,
+                            blurRadius: 4,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
                       ),
-                    ],
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              color: Colors.grey[300],
+                              image: petImageProvider != null
+                                  ? DecorationImage(
+                                      image: petImageProvider,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : null,
+                            ),
+                            child: petImageProvider == null
+                                ? const Icon(Icons.pets, color: Colors.white)
+                                : null,
+                          ),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                (petData['name'] ?? 'Unnamed Pet').toString(),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              Text(
+                                (petData['species'] ?? 'Unknown Species')
+                                    .toString(),
+                                style: const TextStyle(color: Colors.grey),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+              );
+            }
+
+            petWidgets.add(const SizedBox(height: 16));
+            petWidgets.add(
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AddPetScreen()),
+                    );
+                  },
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add Pet'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: HomeScreen.brown,
+                    foregroundColor: HomeScreen.lightCream,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
                   ),
                 ),
-              ],
-              onSelected: (value) async {
-                if (value == 'logout') {
-                  await FirebaseAuth.instance.signOut();
-                  final prefs = await SharedPreferences.getInstance();
-                  await prefs.setBool('rememberMe', false);
+              ),
+            );
 
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (_) => LoginScreen()),
-                    (route) => false,
-                  );
-                }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: petWidgets,
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  // ================= SERVICES =================
+  Widget _buildServicesSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Services',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          children: [
+            _ServiceCard(
+              icon: Icons.cut,
+              label: 'Grooming',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const GroomingScreen()),
+                );
+              },
+            ),
+            _ServiceCard(
+              icon: Icons.medical_services,
+              label: 'Vet',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const VetScreen()),
+                );
+              },
+            ),
+            _ServiceCard(
+              icon: Icons.home,
+              label: 'Boarding',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const BoardingScreen()),
+                );
+              },
+            ),
+            _ServiceCard(
+              icon: Icons.school,
+              label: 'Training',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const TrainingScreen()),
+                );
               },
             ),
           ],
         ),
-
-        const SizedBox(height: 24),
-
-        // Greeting
-        Text(
-          'Hello $userName 👋',
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          'Welcome back to PawPal',
-          style: TextStyle(color: Colors.white70),
-        ),
       ],
-    ),
-  );
-}
-
-// ================= PETS =================
-Widget _buildPetsSection() {
-  final user = FirebaseAuth.instance.currentUser;
-
-  if (user == null) {
-    return const Text('Not logged in');
+    );
   }
-
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        "$userName's Pets",
-        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-      ),
-      const SizedBox(height: 12),
-
-      StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .collection('pets')
-            .orderBy('createdAt', descending: true)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          List<Widget> petWidgets = [];
-
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            petWidgets.add(
-              const Text('No pets yet. Add your first pet!'),
-            );
-          } else {
-            final pets = snapshot.data!.docs;
-            petWidgets.addAll(
-              pets.map((pet) {
-                final petData = pet.data() as Map<String, dynamic>;
-                final petId = pet.id; // <-- doc id
-
-
-                // Decode Base64 image if available
-                ImageProvider? petImageProvider;
-                if (petData['profilePicBase64'] != null) {
-                  try {
-                    petImageProvider = MemoryImage(
-                      base64Decode(petData['profilePicBase64']),
-                    );
-                  } catch (e) {
-                    petImageProvider = null;
-                  }
-                }
-
-                return GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => PetProfileScreen(
-                          userId: user.uid,
-                          petId: petId,
-                        ),
-                      ),
-                    );
-                  },
-
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black12,
-                          blurRadius: 4,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            image: petImageProvider != null
-                                     ? DecorationImage(
-                                      image: petImageProvider,
-                                      fit: BoxFit.cover,
-                                     )
-                                     : null,
-                                     color: Colors.grey[300],
-                          ),
-
-                          child: petImageProvider == null
-                              ? const Icon(Icons.pets, color: Colors.white)
-                              : null,
-                        ),
-                        const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              petData['name'] ?? 'Unnamed Pet',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                            Text(
-                              petData['species'] ?? 'Unknown Species',
-                              style: const TextStyle(color: Colors.grey),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }),
-            );
-          }
-
-          // Always show the Add Pet button
-          petWidgets.add(const SizedBox(height: 16));
-          petWidgets.add(
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const AddPetScreen(),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.add),
-                label: const Text('Add Pet'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: HomeScreen.brown,
-                  foregroundColor: HomeScreen.lightCream,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                ),
-              ),
-            ),
-          );
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: petWidgets,
-          );
-        },
-      ),
-    ],
-  );
-}
-
-
-
-
-  // ================= SERVICES =================
-  Widget _buildServicesSection() {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      const Text(
-        'Services',
-        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-      ),
-      const SizedBox(height: 12),
-      GridView.count(
-        crossAxisCount: 2,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        children: [
-          _ServiceCard(
-            icon: Icons.cut,
-            label: 'Grooming',
-            onTap: () {
-              // TODO: navigate to Grooming screen later
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_)=> const GroomingScreen()),
-                );
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Open Grooming page')),
-              );
-            },
-          ),
-          _ServiceCard(
-            icon: Icons.medical_services,
-            label: 'Vet',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_)=> const VetScreen()),
-                );
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Open Vet Page')),
-              );
-            },
-          ),
-          _ServiceCard(
-            icon: Icons.home,
-            label: 'Boarding',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_)=> const BoardingScreen()),
-                );
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Open Boarding Page')),
-              );
-            },
-          ),
-          _ServiceCard(
-            icon: Icons.school,
-            label: 'Training',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_)=> const TrainingScreen()),
-                );
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Open Training page')),
-              );
-            },
-          ),
-        ],
-      ),
-    ],
-  );
-}
-
 }
 
 // ================= SERVICE CARD =================
@@ -441,10 +437,7 @@ class _ServiceCard extends StatelessWidget {
                 child: Icon(icon, color: Colors.white),
               ),
               const SizedBox(height: 8),
-              Text(
-                label,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
+              Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
             ],
           ),
         ),
@@ -452,3 +445,4 @@ class _ServiceCard extends StatelessWidget {
     );
   }
 }
+

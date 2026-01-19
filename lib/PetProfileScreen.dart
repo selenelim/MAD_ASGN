@@ -58,59 +58,20 @@ class PetProfileScreen extends StatelessWidget {
 
         return Scaffold(
           appBar: AppBar(
-            title: Text((petData['name'] ?? 'Pet Profile').toString()),
-            backgroundColor: HomeScreen.brown,
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.edit),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => AddPetScreen(
-                        petId: petId,
-                        existingPetData: petData,
-                      ),
-                    ),
-                  );
-                },
-              ),
-              IconButton(
-                icon: const Icon(Icons.delete),
-                onPressed: () async {
-                  final confirm = await showDialog<bool>(
-                    context: context,
-                    builder: (_) => AlertDialog(
-                      title: const Text('Delete pet?'),
-                      content: const Text('This cannot be undone.'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: const Text('Cancel'),
-                        ),
-                        ElevatedButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          child: const Text('Delete'),
-                        ),
-                      ],
-                    ),
-                  );
-
-                  if (confirm == true) {
-                    await _petRef.delete();
-                    if (context.mounted) Navigator.pop(context); // back to Home
-                  }
-                },
-              ),
-            ],
+            centerTitle: true,
+            title: Image.asset(
+              'assets/img/pawpal_logo.png',
+              height: 250,
+            ),
+            backgroundColor: Colors.transparent,
           ),
           body: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
                 Container(
-                  width: 130,
-                  height: 130,
+                  width: 250,
+                  height: 250,
                   decoration: BoxDecoration(
                     color: Colors.grey[300],
                     borderRadius: BorderRadius.circular(16),
@@ -133,6 +94,93 @@ class PetProfileScreen extends StatelessWidget {
               ],
             ),
           ),
+          bottomNavigationBar: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AddPetScreen(
+                              petId: petId,
+                              existingPetData: petData,
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(
+                        Icons.edit,
+                        color: HomeScreen.brown,
+                      ),
+                      label: const Text('Edit',
+                        style: TextStyle(
+                          color: HomeScreen.brown
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: HomeScreen.brown,
+                        foregroundColor: HomeScreen.lightCream,
+                      ),
+                      onPressed: () async {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (_) => AlertDialog(
+                            backgroundColor: HomeScreen.lightCream,
+                            title: const Text('Delete pet?',
+                              style: TextStyle(
+                                color: HomeScreen.brown,
+                                fontWeight: FontWeight.bold
+                              ),
+                            ),
+                            content: const Text('This cannot be undone.',
+                              style: TextStyle(
+                                color: HomeScreen.brown
+                              ),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: const Text('Cancel',
+                                  style: TextStyle(
+                                    color: HomeScreen.brown
+                                  ),
+                                ),
+                              ),
+                              ElevatedButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                child: const Text('Delete'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: HomeScreen.brown,
+                                  foregroundColor: HomeScreen.lightCream,
+                                  ),
+                              ),
+                            ],
+                          ),
+                        );
+
+                        if (confirm == true) {
+                          await _petRef.delete();
+                          if (context.mounted) Navigator.pop(context);
+                        }
+                      },
+                      icon: const Icon(Icons.delete),
+                      label: const Text('Delete'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
         );
       },
     );

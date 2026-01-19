@@ -277,8 +277,8 @@ class _AddPetScreenState extends State<AddPetScreen> {
                         GestureDetector(
                           onTap: _pickImage,
                           child: Container(
-                            width: 110,
-                            height: 110,
+                            width: 200,
+                            height: 200,
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(16),
                               color: Colors.grey[300],
