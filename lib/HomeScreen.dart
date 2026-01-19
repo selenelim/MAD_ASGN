@@ -103,6 +103,9 @@ Widget _buildHeader(BuildContext context) {
               ),
               offset: const Offset(0, 50),
               color: HomeScreen.lightCream,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14)
+              ),
               itemBuilder: (context) => [
                 PopupMenuItem(
                   value: 'logout',
@@ -196,6 +199,8 @@ Widget _buildPetsSection() {
             petWidgets.addAll(
               pets.map((pet) {
                 final petData = pet.data() as Map<String, dynamic>;
+                final petId = pet.id; // <-- doc id
+
 
                 // Decode Base64 image if available
                 ImageProvider? petImageProvider;
@@ -214,10 +219,14 @@ Widget _buildPetsSection() {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => PetProfileScreen(petData: petData),
+                        builder: (_) => PetProfileScreen(
+                          userId: user.uid,
+                          petId: petId,
+                        ),
                       ),
                     );
                   },
+
                   child: Container(
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.all(12),

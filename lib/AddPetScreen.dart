@@ -1,13 +1,21 @@
-import 'dart:io';
 import 'dart:convert';
-import 'package:draft_asgn/HomeScreen.dart';
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:draft_asgn/HomeScreen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 class AddPetScreen extends StatefulWidget {
-  const AddPetScreen({super.key});
+  final String? petId; // if not null -> edit mode
+  final Map<String, dynamic>? existingPetData;
+
+  const AddPetScreen({
+    super.key,
+    this.petId,
+    this.existingPetData,
+  });
 
   @override
   State<AddPetScreen> createState() => _AddPetScreenState();
@@ -26,16 +34,61 @@ class _AddPetScreenState extends State<AddPetScreen> {
 
   bool isLoading = false;
 
-  File? petImage; // Selected image
   final ImagePicker _picker = ImagePicker();
+
+  // New image picked this session
+  File? petImage;
+
+  // Existing Base64 (for edit mode preview + keeping old photo)
+  String? existingBase64;
+
+  bool get isEditMode => widget.petId != null;
+
+  @override
+  void initState() {
+    super.initState();
+
+    final data = widget.existingPetData;
+    if (data != null) {
+      nameController.text = (data['name'] ?? '').toString();
+      breedController.text = (data['breed'] ?? '').toString();
+      ageController.text = (data['age'] ?? '').toString();
+      notesController.text = (data['notes'] ?? '').toString();
+      species = data['species'];
+      size = data['size'];
+
+      final pic = data['profilePicBase64'];
+      if (pic is String && pic.isNotEmpty) {
+        existingBase64 = pic;
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    breedController.dispose();
+    ageController.dispose();
+    notesController.dispose();
+    super.dispose();
+  }
 
   Future<void> _pickImage() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
       setState(() {
         petImage = File(image.path);
+        // if user picks a new image, we can still keep existingBase64,
+        // but the UI will show the new File image
       });
     }
+  }
+
+  void _removePhoto() {
+    setState(() {
+      petImage = null;
+      existingBase64 = null; // removes existing photo too
+    });
   }
 
   Future<void> _savePet() async {
@@ -53,28 +106,54 @@ class _AddPetScreenState extends State<AddPetScreen> {
 
     setState(() => isLoading = true);
 
-    String? imageBase64;
+    // Determine which image string to save:
+    // - if user picked a new image -> encode it
+    // - else if edit mode and existingBase64 still exists -> keep it
+    // - else -> null
+    String? imageBase64ToSave;
+
     if (petImage != null) {
       final bytes = await petImage!.readAsBytes();
-      imageBase64 = base64Encode(bytes); // Convert image to string
+      imageBase64ToSave = base64Encode(bytes);
+    } else {
+      imageBase64ToSave = existingBase64; // may be null (if removed)
     }
 
-    await FirebaseFirestore.instance
+    final petsCol = FirebaseFirestore.instance
         .collection('users')
         .doc(user.uid)
-        .collection('pets')
-        .add({
+        .collection('pets');
+
+    final payload = <String, dynamic>{
       'name': nameController.text.trim(),
       'species': species!,
       'breed': breedController.text.trim(),
       'size': size!,
       'age': ageController.text.trim(),
       'notes': notesController.text.trim(),
-      'profilePicBase64': imageBase64, // Save as Base64 string
-      'createdAt': Timestamp.now(),
-    });
+      'profilePicBase64': imageBase64ToSave,
+    };
 
-    Navigator.pop(context);
+    try {
+      if (isEditMode) {
+        await petsCol.doc(widget.petId!).update(payload);
+      } else {
+        await petsCol.add({
+          ...payload,
+          'createdAt': Timestamp.now(),
+        });
+      }
+
+      if (context.mounted) Navigator.pop(context);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save pet: $e')),
+        );
+      }
+    } finally {
+      if (context.mounted) setState(() => isLoading = false);
+    }
   }
 
   Widget _selectButton({
@@ -112,10 +191,7 @@ class _AddPetScreenState extends State<AddPetScreen> {
   Widget _label(String text) {
     return Padding(
       padding: const EdgeInsets.only(top: 16, bottom: 8),
-      child: Text(
-        text,
-        style: const TextStyle(fontWeight: FontWeight.bold),
-      ),
+      child: Text(text, style: const TextStyle(fontWeight: FontWeight.bold)),
     );
   }
 
@@ -129,7 +205,7 @@ class _AddPetScreenState extends State<AddPetScreen> {
       controller: controller,
       maxLines: maxLines,
       validator: required
-          ? (value) => value == null || value.isEmpty ? 'Required' : null
+          ? (value) => value == null || value.trim().isEmpty ? 'Required' : null
           : null,
       decoration: InputDecoration(
         hintText: hint,
@@ -145,16 +221,26 @@ class _AddPetScreenState extends State<AddPetScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ImageProvider? previewImage;
+
+    // Priority: newly picked image > existing base64
+    if (petImage != null) {
+      previewImage = FileImage(petImage!);
+    } else if (existingBase64 != null) {
+      try {
+        previewImage = MemoryImage(base64Decode(existingBase64!));
+      } catch (_) {
+        previewImage = null;
+      }
+    }
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: const BackButton(color: Colors.black),
         centerTitle: true,
-        title: Image.asset(
-          'assets/img/pawpal_logo.png',
-          height: 250,
-        ),
+        title: Image.asset('assets/img/pawpal_logo.png', height: 250),
       ),
       backgroundColor: const Color(0xFFFDFBD7),
       body: SingleChildScrollView(
@@ -162,18 +248,20 @@ class _AddPetScreenState extends State<AddPetScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Tell us about your pet 🐾',
-              style: TextStyle(
+            Text(
+              isEditMode ? 'Edit your pet 🐾' : 'Tell us about your pet 🐾',
+              style: const TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.w900,
                 color: HomeScreen.brown,
               ),
             ),
             const SizedBox(height: 4),
-            const Text(
-              'Help us provide the best care for your furry friend',
-              style: TextStyle(fontSize: 17),
+            Text(
+              isEditMode
+                  ? 'Update your pet details anytime'
+                  : 'Help us provide the best care for your furry friend',
+              style: const TextStyle(fontSize: 17),
             ),
             const SizedBox(height: 20),
 
@@ -182,23 +270,53 @@ class _AddPetScreenState extends State<AddPetScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Pet image picker
+                  // Photo section
                   Center(
-                    child: GestureDetector(
-                      onTap: _pickImage,
-                      child: CircleAvatar(
-                        radius: 50,
-                        backgroundColor: Colors.grey[300],
-                        backgroundImage:
-                            petImage != null ? FileImage(petImage!) : null,
-                        child: petImage == null
-                            ? const Icon(Icons.add_a_photo,
-                                size: 40, color: Colors.white)
-                            : null,
-                      ),
+                    child: Column(
+                      children: [
+                        GestureDetector(
+                          onTap: _pickImage,
+                          child: Container(
+                            width: 110,
+                            height: 110,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              color: Colors.grey[300],
+                              image: previewImage != null
+                                  ? DecorationImage(
+                                      image: previewImage,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : null,
+                            ),
+                            child: previewImage == null
+                                ? const Icon(Icons.add_a_photo,
+                                    size: 40, color: Colors.white)
+                                : null,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            OutlinedButton.icon(
+                              onPressed: _pickImage,
+                              icon: const Icon(Icons.photo_library),
+                              label: const Text('Choose Photo'),
+                            ),
+                            const SizedBox(width: 10),
+                            if (previewImage != null)
+                              OutlinedButton.icon(
+                                onPressed: _removePhoto,
+                                icon: const Icon(Icons.delete_outline),
+                                label: const Text('Remove'),
+                              ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 20),
 
                   _label('Pet Name *'),
                   _textField(nameController, 'e.g. Max, Bella', required: true),
@@ -224,7 +342,9 @@ class _AddPetScreenState extends State<AddPetScreen> {
 
                   _label('Breed (optional)'),
                   _textField(
-                      breedController, 'e.g. Golden Retriever, British Shorthair'),
+                    breedController,
+                    'e.g. Golden Retriever, British Shorthair',
+                  ),
 
                   _label('Size *'),
                   Row(
@@ -256,8 +376,11 @@ class _AddPetScreenState extends State<AddPetScreen> {
                   _textField(ageController, 'e.g. 2 years', required: true),
 
                   _label('Notes (optional)'),
-                  _textField(notesController, 'Any allergies or temperament...',
-                      maxLines: 3),
+                  _textField(
+                    notesController,
+                    'Any allergies or temperament...',
+                    maxLines: 3,
+                  ),
 
                   const SizedBox(height: 30),
 
@@ -274,10 +397,15 @@ class _AddPetScreenState extends State<AddPetScreen> {
                         ),
                       ),
                       child: isLoading
-                          ? const CircularProgressIndicator(
-                              color: Colors.white,
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 3,
+                              ),
                             )
-                          : const Text('Save Pet'),
+                          : Text(isEditMode ? 'Update Pet' : 'Save Pet'),
                     ),
                   ),
                 ],

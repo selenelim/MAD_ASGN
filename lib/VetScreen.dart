@@ -34,10 +34,10 @@ class VetScreen extends StatelessWidget {
           const SizedBox(height: 12),
 
           VetPlaceCard(
-            name: 'Paws & Claws Grooming',
+            name: 'Pawcare Veterinary Clinic',
             rating: 4.8,
             reviews: 342,
-            distance: '0.8 km',
+            distance: '0.9 km',
             priceFrom: 35,
             onTap: () {
               // TODO: navigate to BookingPage
@@ -48,7 +48,7 @@ class VetScreen extends StatelessWidget {
           ),
 
           VetPlaceCard(
-            name: 'The Pampered Pup',
+            name: 'Happy Paws Animal Hospital',
             rating: 4.9,
             reviews: 528,
             distance: '1.2 km',
@@ -61,7 +61,7 @@ class VetScreen extends StatelessWidget {
           ),
 
           VetPlaceCard(
-            name: 'Happy Tails Grooming',
+            name: 'Evergreen Veterinary',
             rating: 4.7,
             reviews: 210,
             distance: '2.0 km',

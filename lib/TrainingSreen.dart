@@ -34,7 +34,7 @@ class TrainingScreen extends StatelessWidget {
           const SizedBox(height: 12),
 
           TrainingPlaceCard(
-            name: 'Paws & Claws Grooming',
+            name: 'Pawsitive Behaviour Training',
             rating: 4.8,
             reviews: 342,
             distance: '0.8 km',
@@ -48,7 +48,7 @@ class TrainingScreen extends StatelessWidget {
           ),
 
           TrainingPlaceCard(
-            name: 'The Pampered Pup',
+            name: 'PawSteps Training Studio',
             rating: 4.9,
             reviews: 528,
             distance: '1.2 km',
@@ -61,7 +61,7 @@ class TrainingScreen extends StatelessWidget {
           ),
 
           TrainingPlaceCard(
-            name: 'Happy Tails Grooming',
+            name: 'Good Paws Training Academy',
             rating: 4.7,
             reviews: 210,
             distance: '2.0 km',

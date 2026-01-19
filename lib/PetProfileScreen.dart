@@ -1,79 +1,155 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:draft_asgn/AddPetScreen.dart';
+import 'package:draft_asgn/HomeScreen.dart';
 
 class PetProfileScreen extends StatelessWidget {
-  final Map<String, dynamic> petData;
+  final String userId;
+  final String petId;
 
-  const PetProfileScreen({super.key, required this.petData});
+  const PetProfileScreen({
+    super.key,
+    required this.userId,
+    required this.petId,
+  });
+
+  DocumentReference<Map<String, dynamic>> get _petRef => FirebaseFirestore
+      .instance
+      .collection('users')
+      .doc(userId)
+      .collection('pets')
+      .doc(petId);
 
   @override
   Widget build(BuildContext context) {
-    ImageProvider? petImage;
-    if (petData['profilePicBase64'] != null) {
-      try {
-        petImage = MemoryImage(base64Decode(petData['profilePicBase64']));
-      } catch (e) {
-        petImage = null;
-      }
-    }
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: _petRef.snapshots(),
+      builder: (context, snapshot) {
+        // Loading
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(petData['name'] ?? 'Pet Profile'),
-        backgroundColor: const Color(0xFF522D0B),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            // Rounded rectangle profile pic
-            Container(
-              width: 250,
-              height: 250,
-              decoration: BoxDecoration(
-                color: Colors.grey[300], // fallback color
-                borderRadius: BorderRadius.circular(16),
-                image: petImage != null
-                    ? DecorationImage(
-                        image: petImage,
-                        fit: BoxFit.cover,
-                      )
-                    : null,
-              ),
-              child: petImage == null
-                  ? const Icon(Icons.pets, size: 60, color: Colors.white)
-                  : null,
+        // Deleted or missing
+        if (!snapshot.hasData || !snapshot.data!.exists) {
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('Pet Profile'),
+              backgroundColor: HomeScreen.brown,
             ),
-            const SizedBox(height: 20),
+            body: const Center(child: Text('Pet not found (maybe deleted).')),
+          );
+        }
 
-            // Pet details
-            _buildInfoRow('Name', petData['name'] ?? 'Unknown'),
-            _buildInfoRow('Species', petData['species'] ?? 'Unknown'),
-            _buildInfoRow('Breed', petData['breed'] ?? 'Unknown'),
-            _buildInfoRow('Size', petData['size'] ?? 'Unknown'),
-            _buildInfoRow('Age', petData['age'] ?? 'Unknown'),
-            _buildInfoRow('Notes', petData['notes'] ?? 'None'),
-          ],
-        ),
-      ),
+        final petData = snapshot.data!.data() ?? {};
+
+        ImageProvider? petImage;
+        final base64Str = petData['profilePicBase64'];
+        if (base64Str is String && base64Str.isNotEmpty) {
+          try {
+            petImage = MemoryImage(base64Decode(base64Str));
+          } catch (_) {
+            petImage = null;
+          }
+        }
+
+        return Scaffold(
+          appBar: AppBar(
+            title: Text((petData['name'] ?? 'Pet Profile').toString()),
+            backgroundColor: HomeScreen.brown,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.edit),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AddPetScreen(
+                        petId: petId,
+                        existingPetData: petData,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete),
+                onPressed: () async {
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (_) => AlertDialog(
+                      title: const Text('Delete pet?'),
+                      content: const Text('This cannot be undone.'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Cancel'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text('Delete'),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  if (confirm == true) {
+                    await _petRef.delete();
+                    if (context.mounted) Navigator.pop(context); // back to Home
+                  }
+                },
+              ),
+            ],
+          ),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                Container(
+                  width: 130,
+                  height: 130,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(16),
+                    image: petImage != null
+                        ? DecorationImage(image: petImage, fit: BoxFit.cover)
+                        : null,
+                  ),
+                  child: petImage == null
+                      ? const Icon(Icons.pets, size: 60, color: Colors.white)
+                      : null,
+                ),
+                const SizedBox(height: 20),
+
+                _info('Name', petData['name']),
+                _info('Species', petData['species']),
+                _info('Breed', petData['breed']),
+                _info('Size', petData['size']),
+                _info('Age', petData['age']),
+                _info('Notes', petData['notes']),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
+  static Widget _info(String label, dynamic value) {
+    final text = (value == null || (value is String && value.trim().isEmpty))
+        ? '—'
+        : value.toString();
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '$label: ',
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          Expanded(
-            child: Text(value),
-          ),
+          Text('$label: ', style: const TextStyle(fontWeight: FontWeight.bold)),
+          Expanded(child: Text(text)),
         ],
       ),
     );

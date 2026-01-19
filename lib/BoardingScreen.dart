@@ -34,7 +34,7 @@ class BoardingScreen extends StatelessWidget {
           const SizedBox(height: 12),
 
           BoardingPlaceCard(
-            name: 'Paws & Claws Grooming',
+            name: 'The Bark & Stay Lodge',
             rating: 4.8,
             reviews: 342,
             distance: '0.8 km',
@@ -48,7 +48,7 @@ class BoardingScreen extends StatelessWidget {
           ),
 
           BoardingPlaceCard(
-            name: 'The Pampered Pup',
+            name: 'SnugglePaws Pet Resort',
             rating: 4.9,
             reviews: 528,
             distance: '1.2 km',
@@ -61,7 +61,7 @@ class BoardingScreen extends StatelessWidget {
           ),
 
           BoardingPlaceCard(
-            name: 'Happy Tails Grooming',
+            name: 'Cozy Tails Boarding',
             rating: 4.7,
             reviews: 210,
             distance: '2.0 km',
