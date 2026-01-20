@@ -1,3 +1,7 @@
+import 'package:draft_asgn/AddPetScreen.dart';
+import 'package:draft_asgn/BookingScreen.dart';
+import 'package:draft_asgn/HomeScreen.dart';
+import 'package:draft_asgn/LogInScreen.dart';
 import 'package:draft_asgn/WelcomeScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -18,7 +22,7 @@ class MyApp extends StatelessWidget {
         primaryColor: Color.fromRGBO(82, 45, 11, 1),
         scaffoldBackgroundColor: Color.fromRGBO(253, 251, 215, 1),
       ),
-      home: WelcomeScreen(),
-    );
+      home: const BookAppointmentScreen(),
+);
   }
 }

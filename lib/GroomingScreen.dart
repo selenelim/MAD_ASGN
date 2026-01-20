@@ -1,3 +1,4 @@
+import 'package:draft_asgn/BookingScreen.dart';
 import 'package:draft_asgn/HomeScreen.dart';
 import 'package:flutter/material.dart';
 
@@ -40,11 +41,14 @@ class GroomingScreen extends StatelessWidget {
             distance: '0.8 km',
             priceFrom: 35,
             onTap: () {
-              // TODO: navigate to BookingPage
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Open booking page')),
-              );
-            },
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => const BookAppointmentScreen(),
+    ),
+  );
+},
+
           ),
 
           GroomingPlaceCard(
