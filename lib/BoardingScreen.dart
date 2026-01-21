@@ -1,4 +1,8 @@
+// ===================== lib/BoardingScreen.dart =====================
+
 import 'package:draft_asgn/HomeScreen.dart';
+import 'package:draft_asgn/ShopServicesScreen.dart';
+import 'package:draft_asgn/models/service.dart';
 import 'package:flutter/material.dart';
 
 class BoardingScreen extends StatelessWidget {
@@ -6,6 +10,31 @@ class BoardingScreen extends StatelessWidget {
 
   static const Color brown = Color.fromRGBO(75, 40, 17, 1);
   static const Color lightCream = Color.fromRGBO(253, 251, 215, 1);
+
+  String _makeShopId(String name) {
+    return name
+        .toLowerCase()
+        .replaceAll('&', 'and')
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
+        .replaceAll(RegExp(r'_+'), '_')
+        .replaceAll(RegExp(r'^_|_$'), '');
+  }
+
+  void _openShopServices({
+    required BuildContext context,
+    required String shopName,
+  }) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ShopServicesScreen(
+          shopId: _makeShopId(shopName),
+          shopName: shopName,
+          category: ServiceCategory.boarding,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,51 +55,44 @@ class BoardingScreen extends StatelessWidget {
         children: [
           _infoCard(),
           const SizedBox(height: 20),
-
           const Text(
             'Boarding services near you',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
 
-          BoardingPlaceCard(
-            name: 'The Bark & Stay Lodge',
+          _PlaceCard(
+            name: 'Cozy Paws Boarding House',
             rating: 4.8,
-            reviews: 342,
-            distance: '0.8 km',
-            priceFrom: 35,
-            onTap: () {
-              // TODO: navigate to BookingPage
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Open booking page')),
-              );
-            },
-          ),
-
-          BoardingPlaceCard(
-            name: 'SnugglePaws Pet Resort',
-            rating: 4.9,
-            reviews: 528,
-            distance: '1.2 km',
+            reviews: 330,
+            distance: '1.1 km',
             priceFrom: 45,
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Open booking page')),
-              );
-            },
+            onTap: () => _openShopServices(
+              context: context,
+              shopName: 'Cozy Paws Boarding House',
+            ),
           ),
-
-          BoardingPlaceCard(
-            name: 'Cozy Tails Boarding',
+          _PlaceCard(
+            name: 'Happy Stay Pet Hotel',
             rating: 4.7,
-            reviews: 210,
+            reviews: 270,
             distance: '2.0 km',
-            priceFrom: 30,
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Open booking page')),
-              );
-            },
+            priceFrom: 60,
+            onTap: () => _openShopServices(
+              context: context,
+              shopName: 'Happy Stay Pet Hotel',
+            ),
+          ),
+          _PlaceCard(
+            name: 'PawPal Overnight Care',
+            rating: 4.9,
+            reviews: 510,
+            distance: '2.8 km',
+            priceFrom: 90,
+            onTap: () => _openShopServices(
+              context: context,
+              shopName: 'PawPal Overnight Care',
+            ),
           ),
         ],
       ),
@@ -92,26 +114,24 @@ class BoardingScreen extends StatelessWidget {
             style: TextStyle(
               color: HomeScreen.lightCream,
               fontSize: 28,
-              fontWeight: FontWeight.w900
+              fontWeight: FontWeight.w900,
             ),
           ),
-          SizedBox(height: 12,),
+          SizedBox(height: 12),
           Text(
-            'Professional grooming services including bathing, haircuts, nail trimming and more.',
-            style: TextStyle(
-              color: HomeScreen.lightCream
-              ),
+            'Book day care or overnight stays with trusted providers.',
+            style: TextStyle(color: HomeScreen.lightCream),
           ),
           SizedBox(height: 12),
           Row(
             children: [
               Icon(Icons.access_time, color: HomeScreen.lightCream, size: 18),
               SizedBox(width: 6),
-              Text('1–3 hours', style: TextStyle(color: HomeScreen.lightCream)),
+              Text('8–24 hours', style: TextStyle(color: HomeScreen.lightCream)),
               SizedBox(width: 16),
               Icon(Icons.attach_money, color: HomeScreen.lightCream, size: 18),
               SizedBox(width: 6),
-              Text('30 – 150', style: TextStyle(color: HomeScreen.lightCream)),
+              Text('45 – 300', style: TextStyle(color: HomeScreen.lightCream)),
             ],
           ),
         ],
@@ -120,14 +140,7 @@ class BoardingScreen extends StatelessWidget {
   }
 }
 
-
-
-
-
-// LOCATIONS
-
-
-class BoardingPlaceCard extends StatelessWidget {
+class _PlaceCard extends StatelessWidget {
   final String name;
   final double rating;
   final int reviews;
@@ -135,8 +148,7 @@ class BoardingPlaceCard extends StatelessWidget {
   final int priceFrom;
   final VoidCallback onTap;
 
-  const BoardingPlaceCard({
-    super.key,
+  const _PlaceCard({
     required this.name,
     required this.rating,
     required this.reviews,
@@ -144,8 +156,6 @@ class BoardingPlaceCard extends StatelessWidget {
     required this.priceFrom,
     required this.onTap,
   });
-
-  static const Color brown = Color.fromRGBO(82, 45, 11, 1);
 
   @override
   Widget build(BuildContext context) {
@@ -164,10 +174,7 @@ class BoardingPlaceCard extends StatelessWidget {
               children: [
                 Text(
                   name,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 Row(

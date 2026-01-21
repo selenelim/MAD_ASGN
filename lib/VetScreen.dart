@@ -1,4 +1,8 @@
+// ===================== lib/VetScreen.dart =====================
+
 import 'package:draft_asgn/HomeScreen.dart';
+import 'package:draft_asgn/ShopServicesScreen.dart';
+import 'package:draft_asgn/models/service.dart';
 import 'package:flutter/material.dart';
 
 class VetScreen extends StatelessWidget {
@@ -6,6 +10,31 @@ class VetScreen extends StatelessWidget {
 
   static const Color brown = Color.fromRGBO(75, 40, 17, 1);
   static const Color lightCream = Color.fromRGBO(253, 251, 215, 1);
+
+  String _makeShopId(String name) {
+    return name
+        .toLowerCase()
+        .replaceAll('&', 'and')
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
+        .replaceAll(RegExp(r'_+'), '_')
+        .replaceAll(RegExp(r'^_|_$'), '');
+  }
+
+  void _openShopServices({
+    required BuildContext context,
+    required String shopName,
+  }) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ShopServicesScreen(
+          shopId: _makeShopId(shopName),
+          shopName: shopName,
+          category: ServiceCategory.vet,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,51 +55,44 @@ class VetScreen extends StatelessWidget {
         children: [
           _infoCard(),
           const SizedBox(height: 20),
-
           const Text(
             'Vet services near you',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
 
-          VetPlaceCard(
-            name: 'Pawcare Veterinary Clinic',
+          _PlaceCard(
+            name: 'Downtown Animal Clinic',
             rating: 4.8,
-            reviews: 342,
+            reviews: 410,
             distance: '0.9 km',
-            priceFrom: 35,
-            onTap: () {
-              // TODO: navigate to BookingPage
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Open booking page')),
-              );
-            },
+            priceFrom: 40,
+            onTap: () => _openShopServices(
+              context: context,
+              shopName: 'Downtown Animal Clinic',
+            ),
           ),
-
-          VetPlaceCard(
-            name: 'Happy Paws Animal Hospital',
-            rating: 4.9,
-            reviews: 528,
-            distance: '1.2 km',
-            priceFrom: 45,
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Open booking page')),
-              );
-            },
-          ),
-
-          VetPlaceCard(
-            name: 'Evergreen Veterinary',
+          _PlaceCard(
+            name: 'Happy Paws Vet Centre',
             rating: 4.7,
-            reviews: 210,
-            distance: '2.0 km',
-            priceFrom: 30,
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Open booking page')),
-              );
-            },
+            reviews: 305,
+            distance: '1.6 km',
+            priceFrom: 35,
+            onTap: () => _openShopServices(
+              context: context,
+              shopName: 'Happy Paws Vet Centre',
+            ),
+          ),
+          _PlaceCard(
+            name: 'CarePlus Veterinary',
+            rating: 4.9,
+            reviews: 620,
+            distance: '2.1 km',
+            priceFrom: 50,
+            onTap: () => _openShopServices(
+              context: context,
+              shopName: 'CarePlus Veterinary',
+            ),
           ),
         ],
       ),
@@ -92,26 +114,24 @@ class VetScreen extends StatelessWidget {
             style: TextStyle(
               color: HomeScreen.lightCream,
               fontSize: 28,
-              fontWeight: FontWeight.w900
+              fontWeight: FontWeight.w900,
             ),
           ),
-          SizedBox(height: 12,),
+          SizedBox(height: 12),
           Text(
-            'Professional grooming services including bathing, haircuts, nail trimming and more.',
-            style: TextStyle(
-              color: HomeScreen.lightCream
-              ),
+            'Book consultations, vaccinations, and check-ups for your pet.',
+            style: TextStyle(color: HomeScreen.lightCream),
           ),
           SizedBox(height: 12),
           Row(
             children: [
               Icon(Icons.access_time, color: HomeScreen.lightCream, size: 18),
               SizedBox(width: 6),
-              Text('1–3 hours', style: TextStyle(color: HomeScreen.lightCream)),
+              Text('30–60 mins', style: TextStyle(color: HomeScreen.lightCream)),
               SizedBox(width: 16),
               Icon(Icons.attach_money, color: HomeScreen.lightCream, size: 18),
               SizedBox(width: 6),
-              Text('30 – 150', style: TextStyle(color: HomeScreen.lightCream)),
+              Text('35 – 200', style: TextStyle(color: HomeScreen.lightCream)),
             ],
           ),
         ],
@@ -120,14 +140,8 @@ class VetScreen extends StatelessWidget {
   }
 }
 
-
-
-
-
-// LOCATIONS
-
-
-class VetPlaceCard extends StatelessWidget {
+// Reusable card (same style)
+class _PlaceCard extends StatelessWidget {
   final String name;
   final double rating;
   final int reviews;
@@ -135,8 +149,7 @@ class VetPlaceCard extends StatelessWidget {
   final int priceFrom;
   final VoidCallback onTap;
 
-  const VetPlaceCard({
-    super.key,
+  const _PlaceCard({
     required this.name,
     required this.rating,
     required this.reviews,
@@ -144,8 +157,6 @@ class VetPlaceCard extends StatelessWidget {
     required this.priceFrom,
     required this.onTap,
   });
-
-  static const Color brown = Color.fromRGBO(82, 45, 11, 1);
 
   @override
   Widget build(BuildContext context) {
@@ -164,10 +175,7 @@ class VetPlaceCard extends StatelessWidget {
               children: [
                 Text(
                   name,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 Row(

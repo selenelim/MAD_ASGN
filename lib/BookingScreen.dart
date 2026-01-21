@@ -1,3 +1,7 @@
+// ===================== lib/BookingScreen.dart =====================
+// Your booking page, updated to accept service + store details from ShopServicesScreen,
+// and pass those into BookingConfirmationScreen instead of hardcoding.
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:draft_asgn/AddPetScreen.dart';
 import 'package:draft_asgn/BookingConfirmationScreen.dart';
@@ -5,9 +9,19 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 
-
 class BookAppointmentScreen extends StatefulWidget {
-  const BookAppointmentScreen({super.key});
+  final String serviceName;
+  final int price;
+  final String storeName;
+  final String storeAddress;
+
+  const BookAppointmentScreen({
+    super.key,
+    required this.serviceName,
+    required this.price,
+    required this.storeName,
+    required this.storeAddress,
+  });
 
   @override
   State<BookAppointmentScreen> createState() => _BookAppointmentScreenState();
@@ -27,6 +41,12 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
     _loadPets();
   }
 
+  @override
+  void dispose() {
+    notesController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadPets() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -38,31 +58,32 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
         .get();
 
     if (!mounted) return;
-  setState(() => pets = snapshot.docs);
+    setState(() => pets = snapshot.docs);
   }
-  Map<String, dynamic> get selectedPetData {
-  final petDoc = pets.firstWhere((p) => p.id == selectedPetId);
-  return petDoc.data() as Map<String, dynamic>;
-}
 
+  Map<String, dynamic> get selectedPetData {
+    final petDoc = pets.firstWhere((p) => p.id == selectedPetId);
+    return petDoc.data() as Map<String, dynamic>;
+  }
 
   void _goAddPet() async {
     await Navigator.pushReplacement(
-    context,
-    MaterialPageRoute(
-      builder: (_) => const AddPetScreen(),
-    ),
-  );
-  _loadPets();
-}
+      context,
+      MaterialPageRoute(builder: (_) => const AddPetScreen()),
+    );
+    _loadPets();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFDFBD4),
       appBar: AppBar(
         backgroundColor: const Color(0xFF713500),
-        title: const Text('Book Appointment',style: TextStyle(
-    color: Color(0xFFFDFBD4)),),
+        title: const Text(
+          'Book Appointment',
+          style: TextStyle(color: Color(0xFFFDFBD4)),
+        ),
         leading: const BackButton(),
       ),
       body: SingleChildScrollView(
@@ -70,8 +91,40 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Optional: show what they are booking
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.black12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.serviceName,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(widget.storeName, style: const TextStyle(color: Colors.black54)),
+                  Text(widget.storeAddress, style: const TextStyle(color: Colors.black54)),
+                  const SizedBox(height: 8),
+                  Text(
+                    "\$${widget.price}",
+                    style: const TextStyle(
+                      color: Color(0xFF713500),
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
-            /// PET SELECTION
+            const SizedBox(height: 22),
+
+            // PET SELECTION
             const Text(
               'Which pet is this booking for?',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -96,38 +149,43 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
               _timeSlots(),
               const SizedBox(height: 24),
               _notesField(),
+              const SizedBox(height: 16),
             ],
           ],
         ),
       ),
 
-      /// BOTTOM BUTTON
+      // BOTTOM BUTTON
       bottomNavigationBar: _canProceed()
           ? Padding(
               padding: const EdgeInsets.all(16),
               child: ElevatedButton(
-                onPressed: () { Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => BookingConfirmationScreen(
-        serviceName: 'Basic Grooming',
-        storeName: 'Paws & Claws Grooming Salon',
-        storeAddress: '123 Main Street, Downtown',
-        price: 35,
-        pet: selectedPetData,
-        date: selectedDate!,
-        time: selectedTime!,
-        notes: notesController.text,
-      ),
-    ),
-  );
-},
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => BookingConfirmationScreen(
+                        serviceName: widget.serviceName,
+                        storeName: widget.storeName,
+                        storeAddress: widget.storeAddress,
+                        price: widget.price,
+                        pet: selectedPetData,
+                        date: selectedDate!,
+                        time: selectedTime!,
+                        notes: notesController.text,
+                      ),
+                    ),
+                  );
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF713500),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: const StadiumBorder(),
                 ),
-                child: const Text('Continue to Confirmation',style: TextStyle(color: Color(0xFFFDFBD4)),),
+                child: const Text(
+                  'Continue to Confirmation',
+                  style: TextStyle(color: Color(0xFFFDFBD4)),
+                ),
               ),
             )
           : null,
@@ -146,35 +204,35 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   }
 
   Widget _addPetButton() {
-  return OutlinedButton.icon(
-    onPressed: _goAddPet,
-    icon: const Icon(
-      Icons.add,
-      color: Color(0xFF713500), // icon color
-    ),
-    label: const Text(
-      'Add New Pet',
-      style: TextStyle(
-        color: Color(0xFF713500), // text color
-        fontWeight: FontWeight.bold,
+    return OutlinedButton.icon(
+      onPressed: _goAddPet,
+      icon: const Icon(Icons.add, color: Color(0xFF713500)),
+      label: const Text(
+        'Add New Pet',
+        style: TextStyle(
+          color: Color(0xFF713500),
+          fontWeight: FontWeight.bold,
+        ),
       ),
-    ),
-    style: OutlinedButton.styleFrom(
-      side: const BorderSide(
-        color: Color(0xFF713500), // border color
-        width: 2,
+      style: OutlinedButton.styleFrom(
+        side: const BorderSide(color: Color(0xFF713500), width: 2),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-    ),
-  );
-}
-
+    );
+  }
 
   Widget _petCard(QueryDocumentSnapshot pet) {
     final data = pet.data() as Map<String, dynamic>;
     final isSelected = pet.id == selectedPetId;
+
+    ImageProvider? img;
+    if (data['profilePicBase64'] != null) {
+      try {
+        img = MemoryImage(const Base64Decoder().convert(data['profilePicBase64']));
+      } catch (_) {
+        img = null;
+      }
+    }
 
     return GestureDetector(
       onTap: () => setState(() => selectedPetId = pet.id),
@@ -193,17 +251,19 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
           children: [
             CircleAvatar(
               radius: 28,
-              backgroundImage: data['profilePicBase64'] != null
-                  ? MemoryImage(
-                      const Base64Decoder().convert(data['profilePicBase64']))
-                  : null,
+              backgroundImage: img,
+              backgroundColor: Colors.grey[300],
+              child: img == null ? const Icon(Icons.pets, color: Colors.white) : null,
             ),
             const SizedBox(width: 12),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(data['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
-                Text('${data['species']} • ${data['breed'] ?? ''}'),
+                Text(
+                  data['name'] ?? 'Unnamed',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text('${data['species'] ?? ''} • ${data['breed'] ?? ''}'),
               ],
             ),
           ],
@@ -214,16 +274,19 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
 
   Widget _datePicker() {
     return ListTile(
-      title: Text(selectedDate == null
-          ? 'Select Date'
-          : '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}'),
+      contentPadding: EdgeInsets.zero,
+      title: Text(
+        selectedDate == null
+            ? 'Select Date'
+            : '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}',
+      ),
       trailing: const Icon(Icons.calendar_today),
       onTap: () async {
         final picked = await showDatePicker(
           context: context,
           firstDate: DateTime.now(),
           lastDate: DateTime.now().add(const Duration(days: 365)),
-          initialDate: DateTime.now(),
+          initialDate: selectedDate ?? DateTime.now(),
         );
         if (picked != null) setState(() => selectedDate = picked);
       },
@@ -232,8 +295,15 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
 
   Widget _timeSlots() {
     final slots = [
-      '9:00 AM','10:00 AM','11:00 AM','12:00 PM',
-      '1:00 PM','2:00 PM','3:00 PM','4:00 PM','5:00 PM'
+      '9:00 AM',
+      '10:00 AM',
+      '11:00 AM',
+      '12:00 PM',
+      '1:00 PM',
+      '2:00 PM',
+      '3:00 PM',
+      '4:00 PM',
+      '5:00 PM'
     ];
 
     return Wrap(

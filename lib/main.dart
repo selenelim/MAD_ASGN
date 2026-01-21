@@ -22,7 +22,7 @@ class MyApp extends StatelessWidget {
         primaryColor: Color.fromRGBO(82, 45, 11, 1),
         scaffoldBackgroundColor: Color.fromRGBO(253, 251, 215, 1),
       ),
-      home: const BookAppointmentScreen(),
+      home: const WelcomeScreen(),
 );
   }
 }

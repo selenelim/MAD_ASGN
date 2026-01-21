@@ -1,5 +1,6 @@
-import 'package:draft_asgn/BookingScreen.dart';
 import 'package:draft_asgn/HomeScreen.dart';
+import 'package:draft_asgn/ShopServicesScreen.dart';
+import 'package:draft_asgn/models/service.dart'; // contains ServiceCategory enum + Service model
 import 'package:flutter/material.dart';
 
 class GroomingScreen extends StatelessWidget {
@@ -7,6 +8,32 @@ class GroomingScreen extends StatelessWidget {
 
   static const Color brown = Color.fromRGBO(75, 40, 17, 1);
   static const Color lightCream = Color.fromRGBO(253, 251, 215, 1);
+
+  // Simple helper to create a stable "id" from the shop name (until you use Firestore IDs)
+  String _makeShopId(String name) {
+    return name
+        .toLowerCase()
+        .replaceAll('&', 'and')
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
+        .replaceAll(RegExp(r'_+'), '_')
+        .replaceAll(RegExp(r'^_|_$'), '');
+  }
+
+  void _openShopServices({
+    required BuildContext context,
+    required String shopName,
+  }) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ShopServicesScreen(
+          shopId: _makeShopId(shopName),
+          shopName: shopName,
+          category: ServiceCategory.grooming,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +54,6 @@ class GroomingScreen extends StatelessWidget {
         children: [
           _infoCard(),
           const SizedBox(height: 20),
-
           const Text(
             'Grooming services near you',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -40,15 +66,10 @@ class GroomingScreen extends StatelessWidget {
             reviews: 342,
             distance: '0.8 km',
             priceFrom: 35,
-            onTap: () {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => const BookAppointmentScreen(),
-    ),
-  );
-},
-
+            onTap: () => _openShopServices(
+              context: context,
+              shopName: 'Paws & Claws Grooming',
+            ),
           ),
 
           GroomingPlaceCard(
@@ -57,11 +78,10 @@ class GroomingScreen extends StatelessWidget {
             reviews: 528,
             distance: '1.2 km',
             priceFrom: 45,
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Open booking page')),
-              );
-            },
+            onTap: () => _openShopServices(
+              context: context,
+              shopName: 'The Pampered Pup',
+            ),
           ),
 
           GroomingPlaceCard(
@@ -70,11 +90,10 @@ class GroomingScreen extends StatelessWidget {
             reviews: 210,
             distance: '2.0 km',
             priceFrom: 30,
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Open booking page')),
-              );
-            },
+            onTap: () => _openShopServices(
+              context: context,
+              shopName: 'Happy Tails Grooming',
+            ),
           ),
         ],
       ),
@@ -96,15 +115,13 @@ class GroomingScreen extends StatelessWidget {
             style: TextStyle(
               color: HomeScreen.lightCream,
               fontSize: 28,
-              fontWeight: FontWeight.w900
+              fontWeight: FontWeight.w900,
             ),
           ),
-          SizedBox(height: 12,),
+          SizedBox(height: 12),
           Text(
             'Professional grooming services including bathing, haircuts, nail trimming and more.',
-            style: TextStyle(
-              color: HomeScreen.lightCream
-              ),
+            style: TextStyle(color: HomeScreen.lightCream),
           ),
           SizedBox(height: 12),
           Row(
@@ -124,12 +141,7 @@ class GroomingScreen extends StatelessWidget {
   }
 }
 
-
-
-
-
-// LOCATIONS
-
+// ===================== LOCATION CARD =====================
 
 class GroomingPlaceCard extends StatelessWidget {
   final String name;
