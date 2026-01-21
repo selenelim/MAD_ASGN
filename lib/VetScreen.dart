@@ -1,9 +1,12 @@
-// ===================== lib/VetScreen.dart =====================
-
 import 'package:draft_asgn/HomeScreen.dart';
 import 'package:draft_asgn/ShopServicesScreen.dart';
 import 'package:draft_asgn/models/service.dart';
+import 'package:draft_asgn/models/place.dart';
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
+
+import 'MapScreen.dart';
+import 'widgets/place_card.dart';
 
 class VetScreen extends StatelessWidget {
   const VetScreen({super.key});
@@ -36,8 +39,56 @@ class VetScreen extends StatelessWidget {
     );
   }
 
+  void _openMap({
+    required BuildContext context,
+    required String placeName,
+    required LatLng location,
+  }) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MapScreen(
+          placeName: placeName,
+          location: location,
+        ),
+      ),
+    );
+  }
+
+  // Data list (easy to reuse for other screens too)
+  List<Place> _vetPlaces() {
+    return const [
+      Place(
+        name: 'Downtown Animal Clinic',
+        rating: 4.8,
+        reviews: 410,
+        distance: '0.9 km',
+        priceFrom: 40,
+        location: LatLng(1.3000, 103.8000),
+      ),
+      Place(
+        name: 'Happy Paws Vet Centre',
+        rating: 4.7,
+        reviews: 305,
+        distance: '1.6 km',
+        priceFrom: 35,
+        location: LatLng(1.3080, 103.8270),
+      ),
+      Place(
+        name: 'CarePlus Veterinary',
+        rating: 4.9,
+        reviews: 620,
+        distance: '2.1 km',
+        priceFrom: 50,
+        location: LatLng(1.3200, 103.8500),
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
+    final places = _vetPlaces();
+
     return Scaffold(
       backgroundColor: lightCream,
       appBar: AppBar(
@@ -61,39 +112,25 @@ class VetScreen extends StatelessWidget {
           ),
           const SizedBox(height: 12),
 
-          _PlaceCard(
-            name: 'Downtown Animal Clinic',
-            rating: 4.8,
-            reviews: 410,
-            distance: '0.9 km',
-            priceFrom: 40,
-            onTap: () => _openShopServices(
-              context: context,
-              shopName: 'Downtown Animal Clinic',
-            ),
-          ),
-          _PlaceCard(
-            name: 'Happy Paws Vet Centre',
-            rating: 4.7,
-            reviews: 305,
-            distance: '1.6 km',
-            priceFrom: 35,
-            onTap: () => _openShopServices(
-              context: context,
-              shopName: 'Happy Paws Vet Centre',
-            ),
-          ),
-          _PlaceCard(
-            name: 'CarePlus Veterinary',
-            rating: 4.9,
-            reviews: 620,
-            distance: '2.1 km',
-            priceFrom: 50,
-            onTap: () => _openShopServices(
-              context: context,
-              shopName: 'CarePlus Veterinary',
-            ),
-          ),
+          // Render reusable cards from data
+          ...places.map((p) {
+            return PlaceCard(
+              name: p.name,
+              rating: p.rating,
+              reviews: p.reviews,
+              distance: p.distance,
+              priceFrom: p.priceFrom,
+              onTap: () => _openShopServices(
+                context: context,
+                shopName: p.name,
+              ),
+              onTapLocation: () => _openMap(
+                context: context,
+                placeName: p.name,
+                location: p.location,
+              ),
+            );
+          }).toList(),
         ],
       ),
     );
@@ -135,73 +172,6 @@ class VetScreen extends StatelessWidget {
             ],
           ),
         ],
-      ),
-    );
-  }
-}
-
-// Reusable card (same style)
-class _PlaceCard extends StatelessWidget {
-  final String name;
-  final double rating;
-  final int reviews;
-  final String distance;
-  final int priceFrom;
-  final VoidCallback onTap;
-
-  const _PlaceCard({
-    required this.name,
-    required this.rating,
-    required this.reviews,
-    required this.distance,
-    required this.priceFrom,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Icon(Icons.star, color: Colors.orange, size: 18),
-                    Text('$rating ($reviews)'),
-                    const SizedBox(width: 12),
-                    const Icon(Icons.location_on, size: 18),
-                    Text(distance),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'From \$$priceFrom',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const Icon(Icons.arrow_forward_ios, size: 16),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }

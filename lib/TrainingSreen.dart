@@ -3,7 +3,12 @@
 import 'package:draft_asgn/HomeScreen.dart';
 import 'package:draft_asgn/ShopServicesScreen.dart';
 import 'package:draft_asgn/models/service.dart';
+import 'package:draft_asgn/models/place.dart';
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
+
+import 'MapScreen.dart';
+import 'widgets/place_card.dart';
 
 class TrainingScreen extends StatelessWidget {
   const TrainingScreen({super.key});
@@ -36,8 +41,56 @@ class TrainingScreen extends StatelessWidget {
     );
   }
 
+  void _openMap({
+    required BuildContext context,
+    required String placeName,
+    required LatLng location,
+  }) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MapScreen(
+          placeName: placeName,
+          location: location,
+        ),
+      ),
+    );
+  }
+
+  // ✅ Data list
+  List<Place> _trainingPlaces() {
+    return const [
+      Place(
+        name: 'Pawfect Obedience School',
+        rating: 4.8,
+        reviews: 280,
+        distance: '1.0 km',
+        priceFrom: 50,
+        location: LatLng(1.3060, 103.8250),
+      ),
+      Place(
+        name: 'Good Dog Training Hub',
+        rating: 4.7,
+        reviews: 190,
+        distance: '1.8 km',
+        priceFrom: 60,
+        location: LatLng(1.3150, 103.8450),
+      ),
+      Place(
+        name: 'Calm Tails Training',
+        rating: 4.9,
+        reviews: 420,
+        distance: '2.6 km',
+        priceFrom: 70,
+        location: LatLng(1.3280, 103.8600),
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
+    final places = _trainingPlaces();
+
     return Scaffold(
       backgroundColor: lightCream,
       appBar: AppBar(
@@ -61,39 +114,25 @@ class TrainingScreen extends StatelessWidget {
           ),
           const SizedBox(height: 12),
 
-          _PlaceCard(
-            name: 'Pawfect Obedience School',
-            rating: 4.8,
-            reviews: 280,
-            distance: '1.0 km',
-            priceFrom: 50,
-            onTap: () => _openShopServices(
-              context: context,
-              shopName: 'Pawfect Obedience School',
-            ),
-          ),
-          _PlaceCard(
-            name: 'Good Dog Training Hub',
-            rating: 4.7,
-            reviews: 190,
-            distance: '1.8 km',
-            priceFrom: 60,
-            onTap: () => _openShopServices(
-              context: context,
-              shopName: 'Good Dog Training Hub',
-            ),
-          ),
-          _PlaceCard(
-            name: 'Calm Tails Training',
-            rating: 4.9,
-            reviews: 420,
-            distance: '2.6 km',
-            priceFrom: 70,
-            onTap: () => _openShopServices(
-              context: context,
-              shopName: 'Calm Tails Training',
-            ),
-          ),
+          // ✅ Reuse PlaceCard
+          ...places.map((p) {
+            return PlaceCard(
+              name: p.name,
+              rating: p.rating,
+              reviews: p.reviews,
+              distance: p.distance,
+              priceFrom: p.priceFrom,
+              onTap: () => _openShopServices(
+                context: context,
+                shopName: p.name,
+              ),
+              onTapLocation: () => _openMap(
+                context: context,
+                placeName: p.name,
+                location: p.location,
+              ),
+            );
+          }).toList(),
         ],
       ),
     );
@@ -135,72 +174,6 @@ class TrainingScreen extends StatelessWidget {
             ],
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _PlaceCard extends StatelessWidget {
-  final String name;
-  final double rating;
-  final int reviews;
-  final String distance;
-  final int priceFrom;
-  final VoidCallback onTap;
-
-  const _PlaceCard({
-    required this.name,
-    required this.rating,
-    required this.reviews,
-    required this.distance,
-    required this.priceFrom,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Icon(Icons.star, color: Colors.orange, size: 18),
-                    Text('$rating ($reviews)'),
-                    const SizedBox(width: 12),
-                    const Icon(Icons.location_on, size: 18),
-                    Text(distance),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'From \$$priceFrom',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const Icon(Icons.arrow_forward_ios, size: 16),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }

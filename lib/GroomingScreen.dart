@@ -1,7 +1,12 @@
 import 'package:draft_asgn/HomeScreen.dart';
 import 'package:draft_asgn/ShopServicesScreen.dart';
-import 'package:draft_asgn/models/service.dart'; // contains ServiceCategory enum + Service model
+import 'package:draft_asgn/models/service.dart';
+import 'package:draft_asgn/models/place.dart';
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
+
+import 'MapScreen.dart';
+import 'widgets/place_card.dart';
 
 class GroomingScreen extends StatelessWidget {
   const GroomingScreen({super.key});
@@ -9,7 +14,6 @@ class GroomingScreen extends StatelessWidget {
   static const Color brown = Color.fromRGBO(75, 40, 17, 1);
   static const Color lightCream = Color.fromRGBO(253, 251, 215, 1);
 
-  // Simple helper to create a stable "id" from the shop name (until you use Firestore IDs)
   String _makeShopId(String name) {
     return name
         .toLowerCase()
@@ -35,8 +39,56 @@ class GroomingScreen extends StatelessWidget {
     );
   }
 
+  void _openMap({
+    required BuildContext context,
+    required String placeName,
+    required LatLng location,
+  }) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MapScreen(
+          placeName: placeName,
+          location: location,
+        ),
+      ),
+    );
+  }
+
+  // ✅ Data list (easy to edit later or load from Firestore)
+  List<Place> _groomingPlaces() {
+    return const [
+      Place(
+        name: 'Paws & Claws Grooming',
+        rating: 4.8,
+        reviews: 342,
+        distance: '0.8 km',
+        priceFrom: 35,
+        location: LatLng(1.3050, 103.8310),
+      ),
+      Place(
+        name: 'The Pampered Pup',
+        rating: 4.9,
+        reviews: 528,
+        distance: '1.2 km',
+        priceFrom: 45,
+        location: LatLng(1.3120, 103.8450),
+      ),
+      Place(
+        name: 'Happy Tails Grooming',
+        rating: 4.7,
+        reviews: 210,
+        distance: '2.0 km',
+        priceFrom: 30,
+        location: LatLng(1.3200, 103.8550),
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
+    final places = _groomingPlaces();
+
     return Scaffold(
       backgroundColor: lightCream,
       appBar: AppBar(
@@ -60,41 +112,25 @@ class GroomingScreen extends StatelessWidget {
           ),
           const SizedBox(height: 12),
 
-          GroomingPlaceCard(
-            name: 'Paws & Claws Grooming',
-            rating: 4.8,
-            reviews: 342,
-            distance: '0.8 km',
-            priceFrom: 35,
-            onTap: () => _openShopServices(
-              context: context,
-              shopName: 'Paws & Claws Grooming',
-            ),
-          ),
-
-          GroomingPlaceCard(
-            name: 'The Pampered Pup',
-            rating: 4.9,
-            reviews: 528,
-            distance: '1.2 km',
-            priceFrom: 45,
-            onTap: () => _openShopServices(
-              context: context,
-              shopName: 'The Pampered Pup',
-            ),
-          ),
-
-          GroomingPlaceCard(
-            name: 'Happy Tails Grooming',
-            rating: 4.7,
-            reviews: 210,
-            distance: '2.0 km',
-            priceFrom: 30,
-            onTap: () => _openShopServices(
-              context: context,
-              shopName: 'Happy Tails Grooming',
-            ),
-          ),
+          // ✅ Reuse the same card UI everywhere
+          ...places.map((p) {
+            return PlaceCard(
+              name: p.name,
+              rating: p.rating,
+              reviews: p.reviews,
+              distance: p.distance,
+              priceFrom: p.priceFrom,
+              onTap: () => _openShopServices(
+                context: context,
+                shopName: p.name,
+              ),
+              onTapLocation: () => _openMap(
+                context: context,
+                placeName: p.name,
+                location: p.location,
+              ),
+            );
+          }).toList(),
         ],
       ),
     );
@@ -136,80 +172,6 @@ class GroomingScreen extends StatelessWidget {
             ],
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ===================== LOCATION CARD =====================
-
-class GroomingPlaceCard extends StatelessWidget {
-  final String name;
-  final double rating;
-  final int reviews;
-  final String distance;
-  final int priceFrom;
-  final VoidCallback onTap;
-
-  const GroomingPlaceCard({
-    super.key,
-    required this.name,
-    required this.rating,
-    required this.reviews,
-    required this.distance,
-    required this.priceFrom,
-    required this.onTap,
-  });
-
-  static const Color brown = Color.fromRGBO(82, 45, 11, 1);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Icon(Icons.star, color: Colors.orange, size: 18),
-                    Text('$rating ($reviews)'),
-                    const SizedBox(width: 12),
-                    const Icon(Icons.location_on, size: 18),
-                    Text(distance),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'From \$$priceFrom',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const Icon(Icons.arrow_forward_ios, size: 16),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }
