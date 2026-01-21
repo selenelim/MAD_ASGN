@@ -245,7 +245,7 @@ class _AddPetScreenState extends State<AddPetScreen> {
         elevation: 0,
         leading: const BackButton(color: Colors.black),
         centerTitle: true,
-        title: Image.asset('assets/img/pawpal_logo.png', height: 250),
+        title: Image.asset('assets/img/pawpal_logo.png', height: 65),
       ),
       backgroundColor: const Color(0xFFFDFBD7),
       body: SingleChildScrollView(
