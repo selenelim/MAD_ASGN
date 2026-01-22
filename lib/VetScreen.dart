@@ -7,12 +7,49 @@ import 'package:latlong2/latlong.dart';
 
 import 'MapScreen.dart';
 import 'widgets/place_card.dart';
+import 'utils/location_helper.dart';
 
-class VetScreen extends StatelessWidget {
+class VetScreen extends StatefulWidget {
   const VetScreen({super.key});
 
+  @override
+  State<VetScreen> createState() => _VetScreenState();
+}
+
+class _VetScreenState extends State<VetScreen> {
   static const Color brown = Color.fromRGBO(75, 40, 17, 1);
   static const Color lightCream = Color.fromRGBO(253, 251, 215, 1);
+
+  LatLng? _userLocation;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserLocation();
+  }
+
+  Future<void> _loadUserLocation() async {
+    final pos = await LocationHelper.getCurrentLocation();
+    if (!mounted) return;
+
+    if (pos != null) {
+      setState(() {
+        _userLocation = LatLng(pos.latitude, pos.longitude);
+      });
+    }
+  }
+
+  String formatDistance(LatLng user, LatLng place) {
+    final meters = const Distance().as(LengthUnit.Meter, user, place);
+
+    if (meters < 1000) {
+      return '${meters.round()} m';   // e.g. 320 m
+    }
+
+    final km = meters / 1000.0;       // IMPORTANT: 1000.0 (double)
+    return '${km.toStringAsFixed(1)} km'; // e.g. 1.2 km
+  }
+
 
   String _makeShopId(String name) {
     return name
@@ -55,32 +92,31 @@ class VetScreen extends StatelessWidget {
     );
   }
 
-  // Data list (easy to reuse for other screens too)
   List<Place> _vetPlaces() {
     return const [
       Place(
-        name: 'Downtown Animal Clinic',
-        rating: 4.8,
-        reviews: 410,
-        distance: '0.9 km',
+        name: 'Advanced VetCare Veterinary Centre',
+        rating: 4.3,
+        reviews: 1500,
+        distance: '',
         priceFrom: 40,
-        location: LatLng(1.3000, 103.8000),
+        location: LatLng(1.3337086, 103.9487581),
       ),
       Place(
-        name: 'Happy Paws Vet Centre',
-        rating: 4.7,
-        reviews: 305,
-        distance: '1.6 km',
+        name: 'My Family Vet',
+        rating: 3.4,
+        reviews: 505,
+        distance: '',
         priceFrom: 35,
-        location: LatLng(1.3080, 103.8270),
+        location: LatLng(1.3499475, 103.7599330),
       ),
       Place(
-        name: 'CarePlus Veterinary',
-        rating: 4.9,
-        reviews: 620,
-        distance: '2.1 km',
+        name: 'Woodgrove Veterinary Services',
+        rating: 4.1,
+        reviews: 135,
+        distance: '',
         priceFrom: 50,
-        location: LatLng(1.3200, 103.8500),
+        location: LatLng(1.4348751, 103.7845433),
       ),
     ];
   }
@@ -111,19 +147,26 @@ class VetScreen extends StatelessWidget {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
-
-          // Render reusable cards from data
+          if (_userLocation == null)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 12),
+              child: Text(
+                'Turn on location to see distance.',
+                style: TextStyle(color: Colors.black54),
+              ),
+            ),
           ...places.map((p) {
+            final distanceText = (_userLocation == null)
+                ? '—'
+                : formatDistance(_userLocation!, p.location);
+
             return PlaceCard(
               name: p.name,
               rating: p.rating,
               reviews: p.reviews,
-              distance: p.distance,
+              distance: distanceText,
               priceFrom: p.priceFrom,
-              onTap: () => _openShopServices(
-                context: context,
-                shopName: p.name,
-              ),
+              onTap: () => _openShopServices(context: context, shopName: p.name),
               onTapLocation: () => _openMap(
                 context: context,
                 placeName: p.name,

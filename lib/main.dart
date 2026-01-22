@@ -1,7 +1,3 @@
-import 'package:draft_asgn/AddPetScreen.dart';
-import 'package:draft_asgn/BookingScreen.dart';
-import 'package:draft_asgn/HomeScreen.dart';
-import 'package:draft_asgn/LogInScreen.dart';
 import 'package:draft_asgn/WelcomeScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';

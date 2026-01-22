@@ -1,5 +1,3 @@
-// ===================== lib/BoardingScreen.dart =====================
-
 import 'package:draft_asgn/HomeScreen.dart';
 import 'package:draft_asgn/ShopServicesScreen.dart';
 import 'package:draft_asgn/models/service.dart';
@@ -9,12 +7,48 @@ import 'package:latlong2/latlong.dart';
 
 import 'MapScreen.dart';
 import 'widgets/place_card.dart';
+import 'utils/location_helper.dart';
 
-class BoardingScreen extends StatelessWidget {
+class BoardingScreen extends StatefulWidget {
   const BoardingScreen({super.key});
 
+  @override
+  State<BoardingScreen> createState() => _BoardingScreenState();
+}
+
+class _BoardingScreenState extends State<BoardingScreen> {
   static const Color brown = Color.fromRGBO(75, 40, 17, 1);
   static const Color lightCream = Color.fromRGBO(253, 251, 215, 1);
+
+  LatLng? _userLocation;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserLocation();
+  }
+
+  Future<void> _loadUserLocation() async {
+    final pos = await LocationHelper.getCurrentLocation();
+    if (!mounted) return;
+
+    if (pos != null) {
+      setState(() {
+        _userLocation = LatLng(pos.latitude, pos.longitude);
+      });
+    }
+  }
+
+  String formatDistance(LatLng user, LatLng place) {
+    final meters = const Distance().as(LengthUnit.Meter, user, place);
+
+    if (meters < 1000) {
+      return '${meters.round()} m';   // e.g. 320 m
+    }
+
+    final km = meters / 1000.0;       // IMPORTANT: 1000.0 (double)
+    return '${km.toStringAsFixed(1)} km'; // e.g. 1.2 km
+  }
 
   String _makeShopId(String name) {
     return name
@@ -57,32 +91,31 @@ class BoardingScreen extends StatelessWidget {
     );
   }
 
-  // ✅ Data list
   List<Place> _boardingPlaces() {
     return const [
       Place(
-        name: 'Cozy Paws Boarding House',
+        name: 'Mutts & Mittens',
         rating: 4.8,
-        reviews: 330,
-        distance: '1.1 km',
+        reviews: 509,
+        distance: '',
         priceFrom: 45,
-        location: LatLng(1.3055, 103.8200),
+        location: LatLng(49.2833650, -122.8096160),
       ),
       Place(
-        name: 'Happy Stay Pet Hotel',
-        rating: 4.7,
-        reviews: 270,
-        distance: '2.0 km',
+        name: 'Wanderlodge (East Branch)',
+        rating: 4.8,
+        reviews: 80,
+        distance: '',
         priceFrom: 60,
-        location: LatLng(1.3150, 103.8400),
+        location: LatLng(1.3158819, 103.9256187),
       ),
       Place(
-        name: 'PawPal Overnight Care',
-        rating: 4.9,
-        reviews: 510,
-        distance: '2.8 km',
+        name: 'Rock N Ruff',
+        rating: 4.6,
+        reviews: 16,
+        distance: '',
         priceFrom: 90,
-        location: LatLng(1.3250, 103.8600),
+        location: LatLng(1.3731890, 103.7631377),
       ),
     ];
   }
@@ -113,19 +146,26 @@ class BoardingScreen extends StatelessWidget {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
-
-          // ✅ Reuse PlaceCard
+          if (_userLocation == null)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 12),
+              child: Text(
+                'Turn on location to see distance.',
+                style: TextStyle(color: Colors.black54),
+              ),
+            ),
           ...places.map((p) {
+            final distanceText = (_userLocation == null)
+                ? '—'
+                : formatDistance(_userLocation!, p.location);
+
             return PlaceCard(
               name: p.name,
               rating: p.rating,
               reviews: p.reviews,
-              distance: p.distance,
+              distance: distanceText,
               priceFrom: p.priceFrom,
-              onTap: () => _openShopServices(
-                context: context,
-                shopName: p.name,
-              ),
+              onTap: () => _openShopServices(context: context, shopName: p.name),
               onTapLocation: () => _openMap(
                 context: context,
                 placeName: p.name,

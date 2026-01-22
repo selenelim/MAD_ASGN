@@ -1,5 +1,3 @@
-// ===================== lib/TrainingScreen.dart =====================
-
 import 'package:draft_asgn/HomeScreen.dart';
 import 'package:draft_asgn/ShopServicesScreen.dart';
 import 'package:draft_asgn/models/service.dart';
@@ -9,12 +7,49 @@ import 'package:latlong2/latlong.dart';
 
 import 'MapScreen.dart';
 import 'widgets/place_card.dart';
+import 'utils/location_helper.dart';
 
-class TrainingScreen extends StatelessWidget {
+class TrainingScreen extends StatefulWidget {
   const TrainingScreen({super.key});
 
+  @override
+  State<TrainingScreen> createState() => _TrainingScreenState();
+}
+
+class _TrainingScreenState extends State<TrainingScreen> {
   static const Color brown = Color.fromRGBO(75, 40, 17, 1);
   static const Color lightCream = Color.fromRGBO(253, 251, 215, 1);
+
+  LatLng? _userLocation;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserLocation();
+  }
+
+  Future<void> _loadUserLocation() async {
+    final pos = await LocationHelper.getCurrentLocation();
+    if (!mounted) return;
+
+    if (pos != null) {
+      setState(() {
+        _userLocation = LatLng(pos.latitude, pos.longitude);
+      });
+    }
+  }
+
+  String formatDistance(LatLng user, LatLng place) {
+    final meters = const Distance().as(LengthUnit.Meter, user, place);
+
+    if (meters < 1000) {
+      return '${meters.round()} m';   // e.g. 320 m
+    }
+
+    final km = meters / 1000.0;       // IMPORTANT: 1000.0 (double)
+    return '${km.toStringAsFixed(1)} km'; // e.g. 1.2 km
+  }
+
 
   String _makeShopId(String name) {
     return name
@@ -57,32 +92,31 @@ class TrainingScreen extends StatelessWidget {
     );
   }
 
-  // ✅ Data list
   List<Place> _trainingPlaces() {
     return const [
       Place(
-        name: 'Pawfect Obedience School',
-        rating: 4.8,
-        reviews: 280,
-        distance: '1.0 km',
+        name: 'Happy-Dog Training',
+        rating: 4.0,
+        reviews: 39,
+        distance: '',
         priceFrom: 50,
-        location: LatLng(1.3060, 103.8250),
+        location: LatLng(1.3267031, 103.8458437),
       ),
       Place(
-        name: 'Good Dog Training Hub',
-        rating: 4.7,
-        reviews: 190,
-        distance: '1.8 km',
+        name: 'PUPS Dog Training',
+        rating: 5.0,
+        reviews: 126,
+        distance: '',
         priceFrom: 60,
-        location: LatLng(1.3150, 103.8450),
+        location: LatLng(1.4403361, 103.8306340),
       ),
       Place(
-        name: 'Calm Tails Training',
-        rating: 4.9,
-        reviews: 420,
-        distance: '2.6 km',
+        name: 'Smartdoggy Academy',
+        rating: 4.8,
+        reviews: 20,
+        distance: '',
         priceFrom: 70,
-        location: LatLng(1.3280, 103.8600),
+        location: LatLng(1.3525353, 103.7069918),
       ),
     ];
   }
@@ -113,19 +147,26 @@ class TrainingScreen extends StatelessWidget {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
-
-          // ✅ Reuse PlaceCard
+          if (_userLocation == null)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 12),
+              child: Text(
+                'Turn on location to see distance.',
+                style: TextStyle(color: Colors.black54),
+              ),
+            ),
           ...places.map((p) {
+            final distanceText = (_userLocation == null)
+                ? '—'
+                : formatDistance(_userLocation!, p.location);
+
             return PlaceCard(
               name: p.name,
               rating: p.rating,
               reviews: p.reviews,
-              distance: p.distance,
+              distance: distanceText,
               priceFrom: p.priceFrom,
-              onTap: () => _openShopServices(
-                context: context,
-                shopName: p.name,
-              ),
+              onTap: () => _openShopServices(context: context, shopName: p.name),
               onTapLocation: () => _openMap(
                 context: context,
                 placeName: p.name,

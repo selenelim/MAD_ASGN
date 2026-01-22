@@ -7,12 +7,54 @@ import 'package:latlong2/latlong.dart';
 
 import 'MapScreen.dart';
 import 'widgets/place_card.dart';
+import 'utils/location_helper.dart';
 
-class GroomingScreen extends StatelessWidget {
+class GroomingScreen extends StatefulWidget {
   const GroomingScreen({super.key});
 
+  @override
+  State<GroomingScreen> createState() => _GroomingScreenState();
+}
+
+class _GroomingScreenState extends State<GroomingScreen> {
   static const Color brown = Color.fromRGBO(75, 40, 17, 1);
   static const Color lightCream = Color.fromRGBO(253, 251, 215, 1);
+
+  LatLng? _userLocation;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserLocation();
+  }
+
+  Future<void> _loadUserLocation() async {
+    final pos = await LocationHelper.getCurrentLocation();
+    if (!mounted) return;
+
+    if (pos != null) {
+      setState(() {
+        _userLocation = LatLng(pos.latitude, pos.longitude);
+      });
+    } else {
+      // optional: show a small message if permission denied / location off
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   const SnackBar(content: Text("Location not available. Distances hidden.")),
+      // );
+    }
+  }
+
+  String formatDistance(LatLng user, LatLng place) {
+    final meters = const Distance().as(LengthUnit.Meter, user, place);
+
+    if (meters < 1000) {
+      return '${meters.round()} m';   // e.g. 320 m
+    }
+
+    final km = meters / 1000.0;       // IMPORTANT: 1000.0 (double)
+    return '${km.toStringAsFixed(1)} km'; // e.g. 1.2 km
+  }
+
 
   String _makeShopId(String name) {
     return name
@@ -55,32 +97,31 @@ class GroomingScreen extends StatelessWidget {
     );
   }
 
-  // ✅ Data list (easy to edit later or load from Firestore)
   List<Place> _groomingPlaces() {
     return const [
       Place(
-        name: 'Paws & Claws Grooming',
-        rating: 4.8,
-        reviews: 342,
-        distance: '0.8 km',
+        name: 'BIG PAWS SMALL PAWS ',
+        rating: 5.0,
+        reviews: 186,
+        distance: '',
         priceFrom: 35,
-        location: LatLng(1.3050, 103.8310),
+        location: LatLng(1.3148, 103.8523),
       ),
       Place(
-        name: 'The Pampered Pup',
-        rating: 4.9,
-        reviews: 528,
-        distance: '1.2 km',
+        name: 'Bob And Lou Grooming',
+        rating: 5.0,
+        reviews: 31,
+        distance: '',
         priceFrom: 45,
-        location: LatLng(1.3120, 103.8450),
+        location: LatLng(1.3850353, 103.7664437),
       ),
       Place(
-        name: 'Happy Tails Grooming',
-        rating: 4.7,
-        reviews: 210,
-        distance: '2.0 km',
+        name: 'Pawpy Kisses',
+        rating: 4.9,
+        reviews: 681,
+        distance: '',
         priceFrom: 30,
-        location: LatLng(1.3200, 103.8550),
+        location: LatLng(1.3215917, 103.8533154),
       ),
     ];
   }
@@ -112,13 +153,26 @@ class GroomingScreen extends StatelessWidget {
           ),
           const SizedBox(height: 12),
 
-          // ✅ Reuse the same card UI everywhere
+          // optional: small status text
+          if (_userLocation == null)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 12),
+              child: Text(
+                'Turn on location to see distance.',
+                style: TextStyle(color: Colors.black54),
+              ),
+            ),
+
           ...places.map((p) {
+            final distanceText = (_userLocation == null)
+                ? '—'
+                : formatDistance(_userLocation!, p.location);
+
             return PlaceCard(
               name: p.name,
               rating: p.rating,
               reviews: p.reviews,
-              distance: p.distance,
+              distance: distanceText,
               priceFrom: p.priceFrom,
               onTap: () => _openShopServices(
                 context: context,
