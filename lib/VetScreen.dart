@@ -1,13 +1,12 @@
+import 'dart:math';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:draft_asgn/HomeScreen.dart';
+import 'package:draft_asgn/MapScreen.dart';
 import 'package:draft_asgn/ShopServicesScreen.dart';
 import 'package:draft_asgn/models/service.dart';
-import 'package:draft_asgn/models/place.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
-
-import 'MapScreen.dart';
-import 'widgets/place_card.dart';
-import 'utils/location_helper.dart';
 
 class VetScreen extends StatefulWidget {
   const VetScreen({super.key});
@@ -20,110 +19,44 @@ class _VetScreenState extends State<VetScreen> {
   static const Color brown = Color.fromRGBO(75, 40, 17, 1);
   static const Color lightCream = Color.fromRGBO(253, 251, 215, 1);
 
-  LatLng? _userLocation;
+  Position? _userPos;
 
   @override
   void initState() {
     super.initState();
-    _loadUserLocation();
+    _loadUserPos();
   }
 
-  Future<void> _loadUserLocation() async {
-    final pos = await LocationHelper.getCurrentLocation();
-    if (!mounted) return;
+  Future<void> _loadUserPos() async {
+    try {
+      final enabled = await Geolocator.isLocationServiceEnabled();
+      if (!enabled) return;
 
-    if (pos != null) {
-      setState(() {
-        _userLocation = LatLng(pos.latitude, pos.longitude);
-      });
+      var perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied) {
+        perm = await Geolocator.requestPermission();
+      }
+      if (perm == LocationPermission.denied ||
+          perm == LocationPermission.deniedForever) return;
+
+      final pos = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      if (!mounted) return;
+      setState(() => _userPos = pos);
+    } catch (_) {
+      // ignore; show "Distance unavailable"
     }
-  }
-
-  String formatDistance(LatLng user, LatLng place) {
-    final meters = const Distance().as(LengthUnit.Meter, user, place);
-
-    if (meters < 1000) {
-      return '${meters.round()} m';   // e.g. 320 m
-    }
-
-    final km = meters / 1000.0;       // IMPORTANT: 1000.0 (double)
-    return '${km.toStringAsFixed(1)} km'; // e.g. 1.2 km
-  }
-
-
-  String _makeShopId(String name) {
-    return name
-        .toLowerCase()
-        .replaceAll('&', 'and')
-        .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
-        .replaceAll(RegExp(r'_+'), '_')
-        .replaceAll(RegExp(r'^_|_$'), '');
-  }
-
-  void _openShopServices({
-    required BuildContext context,
-    required String shopName,
-  }) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ShopServicesScreen(
-          shopId: _makeShopId(shopName),
-          shopName: shopName,
-          category: ServiceCategory.vet,
-        ),
-      ),
-    );
-  }
-
-  void _openMap({
-    required BuildContext context,
-    required String placeName,
-    required LatLng location,
-  }) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => MapScreen(
-          placeName: placeName,
-          location: location,
-        ),
-      ),
-    );
-  }
-
-  List<Place> _vetPlaces() {
-    return const [
-      Place(
-        name: 'Advanced VetCare Veterinary Centre',
-        rating: 4.3,
-        reviews: 1500,
-        distance: '',
-        priceFrom: 40,
-        location: LatLng(1.3337086, 103.9487581),
-      ),
-      Place(
-        name: 'My Family Vet',
-        rating: 3.4,
-        reviews: 505,
-        distance: '',
-        priceFrom: 35,
-        location: LatLng(1.3499475, 103.7599330),
-      ),
-      Place(
-        name: 'Woodgrove Veterinary Services',
-        rating: 4.1,
-        reviews: 135,
-        distance: '',
-        priceFrom: 50,
-        location: LatLng(1.4348751, 103.7845433),
-      ),
-    ];
   }
 
   @override
   Widget build(BuildContext context) {
-    final places = _vetPlaces();
+    final shopsStream = FirebaseFirestore.instance
+        .collection('shops')
+        .where('category', isEqualTo: 'vet')
+        .where('isPublished', isEqualTo: true)
+        .snapshots();
 
     return Scaffold(
       backgroundColor: lightCream,
@@ -132,10 +65,7 @@ class _VetScreenState extends State<VetScreen> {
         elevation: 0,
         leading: const BackButton(color: Colors.black),
         centerTitle: true,
-        title: Image.asset(
-          'assets/img/pawpal_logo.png',
-          height: 65,
-        ),
+        title: Image.asset('assets/img/pawpal_logo.png', height: 65),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -147,33 +77,109 @@ class _VetScreenState extends State<VetScreen> {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
-          if (_userLocation == null)
-            const Padding(
-              padding: EdgeInsets.only(bottom: 12),
-              child: Text(
-                'Turn on location to see distance.',
-                style: TextStyle(color: Colors.black54),
-              ),
-            ),
-          ...places.map((p) {
-            final distanceText = (_userLocation == null)
-                ? '—'
-                : formatDistance(_userLocation!, p.location);
+          StreamBuilder<QuerySnapshot>(
+            stream: shopsStream,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Padding(
+                  padding: EdgeInsets.only(top: 30),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
 
-            return PlaceCard(
-              name: p.name,
-              rating: p.rating,
-              reviews: p.reviews,
-              distance: distanceText,
-              priceFrom: p.priceFrom,
-              onTap: () => _openShopServices(context: context, shopName: p.name),
-              onTapLocation: () => _openMap(
-                context: context,
-                placeName: p.name,
-                location: p.location,
-              ),
-            );
-          }).toList(),
+              if (snapshot.hasError) {
+                return Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Text('Error: ${snapshot.error}'),
+                );
+              }
+
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.only(top: 12),
+                  child: Text('No vet clinics yet.'),
+                );
+              }
+
+              final docs = snapshot.data!.docs;
+
+              return Column(
+                children: docs.map((doc) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  final shopId = doc.id;
+
+                  final shopName = (data['name'] ?? 'Unnamed Shop').toString();
+                  final address = (data['address'] ?? '').toString();
+
+                  final ratingAvg = (data['ratingAvg'] ?? 0) as num;
+                  final ratingCount = (data['ratingCount'] ?? 0) as num;
+
+                  GeoPoint? geo;
+                  final loc = data['location'];
+                  if (loc is GeoPoint) geo = loc;
+
+                  final mapsUrl = (data['mapsUrl'] ?? '').toString().trim();
+
+                  String distanceText = 'Distance unavailable';
+                  if (_userPos != null && geo != null) {
+                    final km = _distanceKm(
+                      _userPos!.latitude,
+                      _userPos!.longitude,
+                      geo.latitude,
+                      geo.longitude,
+                    );
+                    distanceText = '${km.toStringAsFixed(2)} km away';
+                  }
+
+                  void goToServices() {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ShopServicesScreen(
+                          shopId: shopId,
+                          shopName: shopName,
+                          category: ServiceCategory.vet,
+                        ),
+                      ),
+                    );
+                  }
+
+                  final canOpenMap = mapsUrl.isNotEmpty || geo != null;
+
+                  VoidCallback? onTapDistance = canOpenMap
+                      ? () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => MapScreen(
+                                placeName: shopName,
+                                location: LatLng(
+                                  geo?.latitude ?? 1.3521,
+                                  geo?.longitude ?? 103.8198,
+                                ),
+                                mapsUrl: mapsUrl,
+                              ),
+                            ),
+                          );
+                        }
+                      : null;
+
+                  return _ShopCard(
+                    shopId: shopId,
+                    name: shopName,
+                    ratingText: ratingCount.toInt() == 0
+                        ? 'No ratings'
+                        : '${ratingAvg.toDouble().toStringAsFixed(1)} (${ratingCount.toInt()})',
+                    address: address,
+                    distanceText: distanceText,
+                    onTapCard: goToServices,
+                    onTapViewServices: goToServices,
+                    onTapDistance: onTapDistance,
+                  );
+                }).toList(),
+              );
+            },
+          ),
         ],
       ),
     );
@@ -199,7 +205,7 @@ class _VetScreenState extends State<VetScreen> {
           ),
           SizedBox(height: 12),
           Text(
-            'Book consultations, vaccinations, and check-ups for your pet.',
+            'Vet services including consultation, vaccination, check-ups and treatment.',
             style: TextStyle(color: HomeScreen.lightCream),
           ),
           SizedBox(height: 12),
@@ -207,14 +213,199 @@ class _VetScreenState extends State<VetScreen> {
             children: [
               Icon(Icons.access_time, color: HomeScreen.lightCream, size: 18),
               SizedBox(width: 6),
-              Text('30–60 mins', style: TextStyle(color: HomeScreen.lightCream)),
+              Text('30–90 mins', style: TextStyle(color: HomeScreen.lightCream)),
               SizedBox(width: 16),
               Icon(Icons.attach_money, color: HomeScreen.lightCream, size: 18),
               SizedBox(width: 6),
-              Text('35 – 200', style: TextStyle(color: HomeScreen.lightCream)),
+              Text('50 – 300', style: TextStyle(color: HomeScreen.lightCream)),
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  double _distanceKm(double lat1, double lon1, double lat2, double lon2) {
+    const R = 6371.0;
+    final dLat = _deg2rad(lat2 - lat1);
+    final dLon = _deg2rad(lon2 - lon1);
+    final a = sin(dLat / 2) * sin(dLat / 2) +
+        cos(_deg2rad(lat1)) *
+            cos(_deg2rad(lat2)) *
+            sin(dLon / 2) *
+            sin(dLon / 2);
+    final c = 2 * atan2(sqrt(a), sqrt(1 - a));
+    return R * c;
+  }
+
+  double _deg2rad(double deg) => deg * (pi / 180.0);
+}
+
+// ===================== SHOP CARD (same as grooming) =====================
+
+class _ShopCard extends StatelessWidget {
+  final String shopId;
+  final String name;
+  final String ratingText;
+  final String address;
+  final String distanceText;
+
+  final VoidCallback onTapCard;
+  final VoidCallback onTapViewServices;
+  final VoidCallback? onTapDistance;
+
+  const _ShopCard({
+    required this.shopId,
+    required this.name,
+    required this.ratingText,
+    required this.address,
+    required this.distanceText,
+    required this.onTapCard,
+    required this.onTapViewServices,
+    required this.onTapDistance,
+  });
+
+  static const Color brown = Color.fromRGBO(82, 45, 11, 1);
+
+  double _parsePrice(dynamic raw) {
+    if (raw is num) return raw.toDouble();
+    return double.tryParse(raw?.toString() ?? '') ?? 0.0;
+  }
+
+  Future<double> _getMinActiveServicePrice() async {
+    final snap = await FirebaseFirestore.instance
+        .collection('shops')
+        .doc(shopId)
+        .collection('services')
+        .where('isActive', isEqualTo: true)
+        .get();
+
+    if (snap.docs.isEmpty) return 0.0;
+
+    double minPrice = double.infinity;
+    for (final d in snap.docs) {
+      final m = d.data();
+      final p = _parsePrice(m['price']);
+      if (p > 0 && p < minPrice) minPrice = p;
+    }
+    return minPrice == double.infinity ? 0.0 : minPrice;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: onTapCard,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(name,
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.star, color: Colors.orange, size: 18),
+                    const SizedBox(width: 6),
+                    Text(ratingText),
+                  ],
+                ),
+                if (address.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on, size: 18),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          address,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.directions_walk,
+                        size: 18, color: Colors.black54),
+                    const SizedBox(width: 6),
+                    InkWell(
+                      onTap: onTapDistance,
+                      child: Text(
+                        distanceText,
+                        style: TextStyle(
+                          color: onTapDistance == null
+                              ? Colors.black54
+                              : brown,
+                          fontWeight: FontWeight.w700,
+                          decoration: onTapDistance == null
+                              ? TextDecoration.none
+                              : TextDecoration.underline,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    FutureBuilder<double>(
+                      future: _getMinActiveServicePrice(),
+                      builder: (context, snap) {
+                        if (snap.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Text(
+                            'Loading price...',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          );
+                        }
+                        final priceFrom = snap.data ?? 0.0;
+                        return Text(
+                          priceFrom > 0
+                              ? 'Starting from \$${priceFrom.toStringAsFixed(0)}'
+                              : 'Prices vary',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        );
+                      },
+                    ),
+                    InkWell(
+                      onTap: onTapViewServices,
+                      borderRadius: BorderRadius.circular(18),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: brown,
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        child: const Text(
+                          "View Services",
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

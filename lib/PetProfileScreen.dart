@@ -57,13 +57,14 @@ class PetProfileScreen extends StatelessWidget {
         }
 
         return Scaffold(
+          backgroundColor: HomeScreen.lightCream,
           appBar: AppBar(
             centerTitle: true,
             title: Image.asset(
               'assets/img/pawpal_logo.png',
               height: 65,
             ),
-            backgroundColor: Colors.transparent,
+            backgroundColor: HomeScreen.lightCream
           ),
           body: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
@@ -101,6 +102,12 @@ class PetProfileScreen extends StatelessWidget {
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(
+                          color: HomeScreen.brown,
+                          width: 2
+                        )
+                      ),
                       onPressed: () {
                         Navigator.push(
                           context,
@@ -118,7 +125,7 @@ class PetProfileScreen extends StatelessWidget {
                       ),
                       label: const Text('Edit',
                         style: TextStyle(
-                          color: HomeScreen.brown
+                          color: HomeScreen.brown,
                         ),
                       ),
                     ),

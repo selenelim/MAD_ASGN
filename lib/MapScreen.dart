@@ -7,25 +7,39 @@ class MapScreen extends StatelessWidget {
   final String placeName;
   final LatLng location;
 
+  // ✅ provider-supplied link (Google Maps share link / place link / directions link)
+  final String? mapsUrl;
+
   const MapScreen({
     super.key,
     required this.placeName,
     required this.location,
+    this.mapsUrl,
   });
 
   Future<void> _openDirections(BuildContext context) async {
-    final lat = location.latitude;
-    final lng = location.longitude;
+    // ✅ Prefer provider link if available
+    final url = (mapsUrl ?? '').trim();
 
-    // Directions link (works even if Google Maps app is not installed)
-    final uri = Uri.parse(
-      'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng',
-    );
+    final Uri uri;
+    if (url.isNotEmpty) {
+      // If provider link doesn't include scheme, add https://
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        uri = Uri.parse(url);
+      } else {
+        uri = Uri.parse('https://$url');
+      }
+    } else {
+      // fallback: generate directions link from lat/lng
+      final lat = location.latitude;
+      final lng = location.longitude;
+      uri = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$lat,$lng');
+    }
 
     try {
       final ok = await launchUrl(
         uri,
-        mode: LaunchMode.platformDefault, // IMPORTANT
+        mode: LaunchMode.platformDefault,
       );
 
       if (!ok && context.mounted) {
@@ -63,7 +77,6 @@ class MapScreen extends StatelessWidget {
         children: [
           TileLayer(
             urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-            // CHANGE this to your actual package name (AndroidManifest.xml)
             userAgentPackageName: "com.example.draft_asgn",
           ),
           MarkerLayer(
@@ -87,8 +100,6 @@ class MapScreen extends StatelessWidget {
           ),
         ],
       ),
-
-      // Big button at bottom for better UX
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(12),

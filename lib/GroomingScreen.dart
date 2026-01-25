@@ -1,13 +1,13 @@
+// GroomingScreen.dart
+import 'dart:math';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:draft_asgn/HomeScreen.dart';
+import 'package:draft_asgn/MapScreen.dart';
 import 'package:draft_asgn/ShopServicesScreen.dart';
 import 'package:draft_asgn/models/service.dart';
-import 'package:draft_asgn/models/place.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
-
-import 'MapScreen.dart';
-import 'widgets/place_card.dart';
-import 'utils/location_helper.dart';
 
 class GroomingScreen extends StatefulWidget {
   const GroomingScreen({super.key});
@@ -20,115 +20,44 @@ class _GroomingScreenState extends State<GroomingScreen> {
   static const Color brown = Color.fromRGBO(75, 40, 17, 1);
   static const Color lightCream = Color.fromRGBO(253, 251, 215, 1);
 
-  LatLng? _userLocation;
+  Position? _userPos;
 
   @override
   void initState() {
     super.initState();
-    _loadUserLocation();
+    _loadUserPos();
   }
 
-  Future<void> _loadUserLocation() async {
-    final pos = await LocationHelper.getCurrentLocation();
-    if (!mounted) return;
+  Future<void> _loadUserPos() async {
+    try {
+      final enabled = await Geolocator.isLocationServiceEnabled();
+      if (!enabled) return;
 
-    if (pos != null) {
-      setState(() {
-        _userLocation = LatLng(pos.latitude, pos.longitude);
-      });
-    } else {
-      // optional: show a small message if permission denied / location off
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   const SnackBar(content: Text("Location not available. Distances hidden.")),
-      // );
+      var perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied) {
+        perm = await Geolocator.requestPermission();
+      }
+      if (perm == LocationPermission.denied ||
+          perm == LocationPermission.deniedForever) return;
+
+      final pos = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      if (!mounted) return;
+      setState(() => _userPos = pos);
+    } catch (_) {
+      // ignore; show "Distance unavailable"
     }
-  }
-
-  String formatDistance(LatLng user, LatLng place) {
-    final meters = const Distance().as(LengthUnit.Meter, user, place);
-
-    if (meters < 1000) {
-      return '${meters.round()} m';   // e.g. 320 m
-    }
-
-    final km = meters / 1000.0;       // IMPORTANT: 1000.0 (double)
-    return '${km.toStringAsFixed(1)} km'; // e.g. 1.2 km
-  }
-
-
-  String _makeShopId(String name) {
-    return name
-        .toLowerCase()
-        .replaceAll('&', 'and')
-        .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
-        .replaceAll(RegExp(r'_+'), '_')
-        .replaceAll(RegExp(r'^_|_$'), '');
-  }
-
-  void _openShopServices({
-    required BuildContext context,
-    required String shopName,
-  }) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ShopServicesScreen(
-          shopId: _makeShopId(shopName),
-          shopName: shopName,
-          category: ServiceCategory.grooming,
-        ),
-      ),
-    );
-  }
-
-  void _openMap({
-    required BuildContext context,
-    required String placeName,
-    required LatLng location,
-  }) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => MapScreen(
-          placeName: placeName,
-          location: location,
-        ),
-      ),
-    );
-  }
-
-  List<Place> _groomingPlaces() {
-    return const [
-      Place(
-        name: 'BIG PAWS SMALL PAWS ',
-        rating: 5.0,
-        reviews: 186,
-        distance: '',
-        priceFrom: 35,
-        location: LatLng(1.3148, 103.8523),
-      ),
-      Place(
-        name: 'Bob And Lou Grooming',
-        rating: 5.0,
-        reviews: 31,
-        distance: '',
-        priceFrom: 45,
-        location: LatLng(1.3850353, 103.7664437),
-      ),
-      Place(
-        name: 'Pawpy Kisses',
-        rating: 4.9,
-        reviews: 681,
-        distance: '',
-        priceFrom: 30,
-        location: LatLng(1.3215917, 103.8533154),
-      ),
-    ];
   }
 
   @override
   Widget build(BuildContext context) {
-    final places = _groomingPlaces();
+    final shopsStream = FirebaseFirestore.instance
+        .collection('shops')
+        .where('category', isEqualTo: 'grooming')
+        .where('isPublished', isEqualTo: true)
+        .snapshots();
 
     return Scaffold(
       backgroundColor: lightCream,
@@ -137,10 +66,7 @@ class _GroomingScreenState extends State<GroomingScreen> {
         elevation: 0,
         leading: const BackButton(color: Colors.black),
         centerTitle: true,
-        title: Image.asset(
-          'assets/img/pawpal_logo.png',
-          height: 65,
-        ),
+        title: Image.asset('assets/img/pawpal_logo.png', height: 65),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -152,39 +78,113 @@ class _GroomingScreenState extends State<GroomingScreen> {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
+          StreamBuilder<QuerySnapshot>(
+            stream: shopsStream,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Padding(
+                  padding: EdgeInsets.only(top: 30),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
 
-          // optional: small status text
-          if (_userLocation == null)
-            const Padding(
-              padding: EdgeInsets.only(bottom: 12),
-              child: Text(
-                'Turn on location to see distance.',
-                style: TextStyle(color: Colors.black54),
-              ),
-            ),
+              if (snapshot.hasError) {
+                return Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Text('Error: ${snapshot.error}'),
+                );
+              }
 
-          ...places.map((p) {
-            final distanceText = (_userLocation == null)
-                ? '—'
-                : formatDistance(_userLocation!, p.location);
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.only(top: 12),
+                  child: Text('No grooming shops yet.'),
+                );
+              }
 
-            return PlaceCard(
-              name: p.name,
-              rating: p.rating,
-              reviews: p.reviews,
-              distance: distanceText,
-              priceFrom: p.priceFrom,
-              onTap: () => _openShopServices(
-                context: context,
-                shopName: p.name,
-              ),
-              onTapLocation: () => _openMap(
-                context: context,
-                placeName: p.name,
-                location: p.location,
-              ),
-            );
-          }).toList(),
+              final docs = snapshot.data!.docs;
+
+              return Column(
+                children: docs.map((doc) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  final shopId = doc.id;
+
+                  final shopName = (data['name'] ?? 'Unnamed Shop').toString();
+                  final address = (data['address'] ?? '').toString();
+
+                  final ratingAvg = (data['ratingAvg'] ?? 0) as num;
+                  final ratingCount = (data['ratingCount'] ?? 0) as num;
+
+                  // Location (for distance calculation + pin)
+                  GeoPoint? geo;
+                  final loc = data['location'];
+                  if (loc is GeoPoint) geo = loc;
+
+                  // Provider directions link (preferred for navigation)
+                  final mapsUrl = (data['mapsUrl'] ?? '').toString().trim();
+
+                  // Distance text
+                  String distanceText = 'Distance unavailable';
+                  if (_userPos != null && geo != null) {
+                    final km = _distanceKm(
+                      _userPos!.latitude,
+                      _userPos!.longitude,
+                      geo.latitude,
+                      geo.longitude,
+                    );
+                    distanceText = '${km.toStringAsFixed(2)} km away';
+                  }
+
+                  void goToServices() {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ShopServicesScreen(
+                          shopId: shopId,
+                          shopName: shopName,
+                          category: ServiceCategory.grooming,
+                        ),
+                      ),
+                    );
+                  }
+
+                  // ✅ Allow opening map if EITHER mapsUrl exists OR geo exists
+                  final canOpenMap = mapsUrl.isNotEmpty || geo != null;
+
+                  VoidCallback? onTapDistance = canOpenMap
+                      ? () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => MapScreen(
+                                placeName: shopName,
+                                location: LatLng(
+                                  geo?.latitude ?? 1.3521,
+                                  geo?.longitude ?? 103.8198,
+                                ),
+                                mapsUrl: mapsUrl,
+                              ),
+                            ),
+                          );
+                        }
+                      : null;
+
+                  return _ShopCard(
+                    shopId: shopId, // ✅ NEW: used to compute min service price
+                    name: shopName,
+                    ratingText: ratingCount.toInt() == 0
+                        ? 'No ratings'
+                        : '${ratingAvg.toDouble().toStringAsFixed(1)} (${ratingCount.toInt()})',
+                    address: address,
+                    distanceText: distanceText,
+                    onTapCard: goToServices,
+                    onTapViewServices: goToServices,
+                    onTapDistance: onTapDistance,
+                  );
+                }).toList(),
+              );
+            },
+          ),
         ],
       ),
     );
@@ -226,6 +226,191 @@ class _GroomingScreenState extends State<GroomingScreen> {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  // haversine
+  double _distanceKm(double lat1, double lon1, double lat2, double lon2) {
+    const R = 6371.0;
+    final dLat = _deg2rad(lat2 - lat1);
+    final dLon = _deg2rad(lon2 - lon1);
+    final a = sin(dLat / 2) * sin(dLat / 2) +
+        cos(_deg2rad(lat1)) *
+            cos(_deg2rad(lat2)) *
+            sin(dLon / 2) *
+            sin(dLon / 2);
+    final c = 2 * atan2(sqrt(a), sqrt(1 - a));
+    return R * c;
+  }
+
+  double _deg2rad(double deg) => deg * (pi / 180.0);
+}
+
+class _ShopCard extends StatelessWidget {
+  final String shopId; // ✅ NEW
+  final String name;
+  final String ratingText;
+  final String address;
+  final String distanceText;
+
+  final VoidCallback onTapCard;
+  final VoidCallback onTapViewServices;
+  final VoidCallback? onTapDistance;
+
+  const _ShopCard({
+    required this.shopId,
+    required this.name,
+    required this.ratingText,
+    required this.address,
+    required this.distanceText,
+    required this.onTapCard,
+    required this.onTapViewServices,
+    required this.onTapDistance,
+  });
+
+  static const Color brown = Color.fromRGBO(82, 45, 11, 1);
+
+  double _parsePrice(dynamic raw) {
+    if (raw is num) return raw.toDouble();
+    return double.tryParse(raw?.toString() ?? '') ?? 0.0;
+  }
+
+  Future<double> _getMinActiveServicePrice() async {
+    final snap = await FirebaseFirestore.instance
+        .collection('shops')
+        .doc(shopId)
+        .collection('services')
+        .where('isActive', isEqualTo: true)
+        .get();
+
+    if (snap.docs.isEmpty) return 0.0;
+
+    double minPrice = double.infinity;
+
+    for (final d in snap.docs) {
+      final m = d.data();
+      final p = _parsePrice(m['price']);
+      if (p > 0 && p < minPrice) minPrice = p;
+    }
+
+    return minPrice == double.infinity ? 0.0 : minPrice;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: onTapCard,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.star, color: Colors.orange, size: 18),
+                    const SizedBox(width: 6),
+                    Text(ratingText),
+                  ],
+                ),
+                if (address.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on, size: 18),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          address,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: 8),
+
+                // Clickable distance / directions entry
+                Row(
+                  children: [
+                    const Icon(Icons.directions_walk, size: 18, color: Colors.black54),
+                    const SizedBox(width: 6),
+                    InkWell(
+                      onTap: onTapDistance,
+                      child: Text(
+                        distanceText,
+                        style: TextStyle(
+                          color: onTapDistance == null ? Colors.black54 : brown,
+                          fontWeight: FontWeight.w700,
+                          decoration: onTapDistance == null
+                              ? TextDecoration.none
+                              : TextDecoration.underline,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // ✅ auto-min price (no more shop.priceFrom)
+                    FutureBuilder<double>(
+                      future: _getMinActiveServicePrice(),
+                      builder: (context, snap) {
+                        if (snap.connectionState == ConnectionState.waiting) {
+                          return const Text(
+                            'Loading price...',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          );
+                        }
+                        final priceFrom = snap.data ?? 0.0;
+                        return Text(
+                          priceFrom > 0
+                              ? 'Starting from \$${priceFrom.toStringAsFixed(0)}'
+                              : 'Prices vary',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        );
+                      },
+                    ),
+
+                    InkWell(
+                      onTap: onTapViewServices,
+                      borderRadius: BorderRadius.circular(18),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: brown,
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        child: const Text(
+                          "View Services",
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

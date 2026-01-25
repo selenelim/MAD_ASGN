@@ -6,12 +6,15 @@ import 'package:draft_asgn/BoardingScreen.dart';
 import 'package:draft_asgn/GroomingScreen.dart';
 import 'package:draft_asgn/LogInScreen.dart';
 import 'package:draft_asgn/PetProfileScreen.dart';
+import 'package:draft_asgn/ProfileScreen.dart';
+import 'package:draft_asgn/RegisterBusinessScreen.dart';
 import 'package:draft_asgn/TrainingSreen.dart';
 import 'package:draft_asgn/VetScreen.dart';
+import 'package:draft_asgn/ProviderHomeScreen.dart'; // ✅ provider dashboard (multi-shop)
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:draft_asgn/ProfileScreen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -25,11 +28,13 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String userName = '';
+  String userRole = 'user'; // user | provider
 
   @override
   void initState() {
     super.initState();
     _loadUserName();
+    _loadUserRole();
   }
 
   Future<void> _loadUserName() async {
@@ -40,23 +45,68 @@ class _HomeScreenState extends State<HomeScreen> {
         userName = user.displayName ?? user.email?.split('@')[0] ?? 'there';
       });
     } else {
-      setState(() {
-        userName = 'there';
-      });
+      setState(() => userName = 'there');
     }
   }
 
+  Future<void> _loadUserRole() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final doc =
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+    final data = doc.data() as Map<String, dynamic>? ?? {};
+
+    if (!mounted) return;
+
+    setState(() {
+      userRole = (data['role'] ?? 'user').toString(); // user/provider
+    });
+  }
+
   Future<void> _logout(BuildContext context) async {
-    await FirebaseAuth.instance.signOut();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('rememberMe', false);
+    await FirebaseAuth.instance.signOut();
 
     if (!context.mounted) return;
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (_) => LoginScreen()),
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
       (route) => false,
     );
+  }
+
+  Future<void> _handleMenuSelection(String value) async {
+    if (value == 'profile') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ProfileScreen()),
+      );
+      return;
+    }
+
+    if (value == 'register_business') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const RegisterBusinessScreen()),
+      );
+      return;
+    }
+
+    if (value == 'manage_shop') {
+      // ✅ Now providers manage MULTIPLE shops, no shopId needed
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ProviderHomeScreen()),
+      );
+      return;
+    }
+
+    if (value == 'logout') {
+      await _logout(context);
+      return;
+    }
   }
 
   @override
@@ -100,7 +150,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 'assets/img/pawpal_logo_cream.png',
                 height: 45,
               ),
-
               PopupMenuButton<String>(
                 icon: const CircleAvatar(
                   backgroundColor: Colors.white,
@@ -112,54 +161,64 @@ class _HomeScreenState extends State<HomeScreen> {
                   borderRadius: BorderRadius.circular(14),
                 ),
                 itemBuilder: (context) => [
-                  PopupMenuItem(
+                  const PopupMenuItem(
                     value: 'profile',
                     child: Row(
-                      children: const [
+                      children: [
                         Icon(Icons.account_circle, color: HomeScreen.brown),
                         SizedBox(width: 8),
-                        Text(
-                          'My Profile',
-                          style: TextStyle(color: HomeScreen.brown),
-                        ),
+                        Text('My Profile', style: TextStyle(color: HomeScreen.brown)),
                       ],
                     ),
                   ),
+
+                  // ✅ Only NORMAL USERS see Register Business
+                  if (userRole == 'user') ...[
+                    const PopupMenuDivider(),
+                    const PopupMenuItem(
+                      value: 'register_business',
+                      child: Row(
+                        children: [
+                          Icon(Icons.store, color: HomeScreen.brown),
+                          SizedBox(width: 8),
+                          Text('Register Business', style: TextStyle(color: HomeScreen.brown)),
+                        ],
+                      ),
+                    ),
+                  ],
+
+                  // ✅ Only PROVIDERS see Manage Shops (multi-shop)
+                  if (userRole == 'provider') ...[
+                    const PopupMenuDivider(),
+                    const PopupMenuItem(
+                      value: 'manage_shop',
+                      child: Row(
+                        children: [
+                          Icon(Icons.dashboard, color: HomeScreen.brown),
+                          SizedBox(width: 8),
+                          Text('Manage My Shops', style: TextStyle(color: HomeScreen.brown)),
+                        ],
+                      ),
+                    ),
+                  ],
+
                   const PopupMenuDivider(),
-                  PopupMenuItem(
+                  const PopupMenuItem(
                     value: 'logout',
                     child: Row(
-                      children: const [
+                      children: [
                         Icon(Icons.logout, color: HomeScreen.brown),
                         SizedBox(width: 8),
-                        Text(
-                          'Logout',
-                          style: TextStyle(color: HomeScreen.brown),
-                        ),
+                        Text('Logout', style: TextStyle(color: HomeScreen.brown)),
                       ],
                     ),
                   ),
                 ],
-                onSelected: (value) async {
-                  if (value == 'profile') {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                    );
-                    return;
-                  }
-
-                  if (value == 'logout') {
-                    await _logout(context);
-                    return;
-                  }
-                },
+                onSelected: _handleMenuSelection,
               ),
             ],
           ),
-
           const SizedBox(height: 24),
-
           Text(
             'Hello $userName 👋',
             style: const TextStyle(
@@ -169,10 +228,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
-            'Welcome back to PawPal',
-            style: TextStyle(color: Colors.white70),
-          ),
+          const Text('Welcome back to PawPal', style: TextStyle(color: Colors.white70)),
         ],
       ),
     );
@@ -194,7 +250,6 @@ class _HomeScreenState extends State<HomeScreen> {
           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
-
         StreamBuilder<QuerySnapshot>(
           stream: FirebaseFirestore.instance
               .collection('users')
@@ -210,9 +265,7 @@ class _HomeScreenState extends State<HomeScreen> {
             final petWidgets = <Widget>[];
 
             if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-              petWidgets.add(
-                const Text('No pets yet. Add your first pet!'),
-              );
+              petWidgets.add(const Text('No pets yet. Add your first pet!'));
             } else {
               final pets = snapshot.data!.docs;
 
@@ -288,8 +341,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ),
                               Text(
-                                (petData['species'] ?? 'Unknown Species')
-                                    .toString(),
+                                (petData['species'] ?? 'Unknown Species').toString(),
                                 style: const TextStyle(color: Colors.grey),
                               ),
                             ],
@@ -342,10 +394,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Services',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
+        const Text('Services', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 12),
         GridView.count(
           crossAxisCount: 2,
@@ -445,4 +494,3 @@ class _ServiceCard extends StatelessWidget {
     );
   }
 }
-
