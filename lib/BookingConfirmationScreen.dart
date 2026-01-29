@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 
 class BookingConfirmationScreen extends StatelessWidget {
@@ -27,6 +29,23 @@ class BookingConfirmationScreen extends StatelessWidget {
   String _formatDate(DateTime d) {
     return '${d.weekday}, ${d.day}/${d.month}/${d.year}';
   }
+  Map<String, dynamic> _bookingData(String uid) {
+  return {
+    'userId': uid,
+    'serviceName': serviceName,
+    'storeName': storeName,
+    'storeAddress': storeAddress,
+    'price': price,
+    'pet': pet,
+    'date': Timestamp.fromDate(date),
+    'time': time,
+    'notes': notes,
+    'createdAt': FieldValue.serverTimestamp(),
+    'status': 'upcoming',
+
+  };
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +56,7 @@ class BookingConfirmationScreen extends StatelessWidget {
           /// HEADER
           /// HEADER
 Container(
-  width: double.infinity, // 👈 makes it full width
+  width: double.infinity, // 
   padding: const EdgeInsets.fromLTRB(20, 70, 20, 36),
   decoration: const BoxDecoration(
     color: Color(0xFF713500),
@@ -139,17 +158,53 @@ Container(
   padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
   child: SizedBox(
     width: double.infinity,
-    height: 58, // 👈 taller button
+    height: 58, 
     child: ElevatedButton(
       style: ElevatedButton.styleFrom(
         backgroundColor: const Color(0xFF713500),
         shape: const StadiumBorder(),
         elevation: 4,
       ),
-      onPressed: () {
-        // TODO: save booking to Firestore
-        Navigator.popUntil(context, (route) => route.isFirst);
-      },
+      onPressed: () async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) return;
+
+  final bookingId =
+      '${storeName}_${date.toIso8601String().split('T')[0]}_$time';
+
+  final firestore = FirebaseFirestore.instance;
+
+  try {
+    await firestore.runTransaction((tx) async {
+      final slotRef = firestore.collection('bookings').doc(bookingId);
+
+      final slotSnap = await tx.get(slotRef);
+      if (slotSnap.exists) {
+        throw Exception('Slot already booked');
+      }
+
+      // Save global booking (locks the slot)
+      tx.set(slotRef, _bookingData(user.uid));
+
+      // Save under user
+      tx.set(
+        firestore
+            .collection('users')
+            .doc(user.uid)
+            .collection('bookings')
+            .doc(),
+        _bookingData(user.uid),
+      );
+    });
+
+    Navigator.popUntil(context, (route) => route.isFirst);
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('This slot is already booked')),
+    );
+  }
+},
+
       child: const Text(
         'Confirm Booking',
         style: TextStyle(

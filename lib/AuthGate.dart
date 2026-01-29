@@ -19,6 +19,8 @@ class AuthGate extends StatelessWidget {
       }, SetOptions(merge: true));
       return;
     }
+    
+
 
     // Ensure role exists
     final data = snap.data() as Map<String, dynamic>? ?? {};
@@ -81,6 +83,7 @@ class AuthGate extends StatelessWidget {
         if (mode == 'provider') return const ProviderHomeScreen();
 
         return const HomeScreen();
+        
       },
     );
   }
