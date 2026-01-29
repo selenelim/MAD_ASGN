@@ -1,0 +1,191 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'HomeScreen.dart';
+
+class MyAppointmentsScreen extends StatelessWidget {
+  const MyAppointmentsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    return Scaffold(
+      backgroundColor: HomeScreen.lightCream,
+      appBar: AppBar(
+        backgroundColor: HomeScreen.brown,
+        title: const Text('My Appointments'),
+      ),
+      body: user == null
+          ? const Center(child: Text('Please log in'))
+          : StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(user.uid)
+                  .collection('bookings')
+                  .orderBy('date', descending: false)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(
+                    child: Text(
+                      'No appointments yet 🐾',
+                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                    ),
+                  );
+                }
+
+                final now = DateTime.now();
+
+                final upcoming = snapshot.data!.docs.where((doc) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  return data['status'] == 'upcoming';
+                }).toList();
+
+                final cancelled = snapshot.data!.docs.where((doc) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  return data['status'] == 'cancelled';
+                }).toList();
+
+                final past = snapshot.data!.docs.where((doc) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  return data['status'] == 'completed';
+                }).toList();
+
+                return ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    if (upcoming.isNotEmpty) ...[
+                      _sectionTitle('Upcoming Appointments'),
+                      ...upcoming.map(
+                        (doc) =>
+                            _appointmentCard(context, doc, showCancel: true),
+                      ),
+                    ],
+
+                    if (cancelled.isNotEmpty) ...[
+                      const SizedBox(height: 24),
+                      _sectionTitle('Cancelled Appointments'),
+                      ...cancelled.map(
+                        (doc) =>
+                            _appointmentCard(context, doc, showCancel: false),
+                      ),
+                    ],
+
+                    if (past.isNotEmpty) ...[
+                      const SizedBox(height: 24),
+                      _sectionTitle('Past Appointments'),
+                      ...past.map(
+                        (doc) =>
+                            _appointmentCard(context, doc, showCancel: false),
+                      ),
+                    ],
+                  ],
+                );
+              },
+            ),
+    );
+  }
+
+  // ---------------- UI HELPERS ----------------
+
+  static Widget _sectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Text(
+        title,
+        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  static Widget _appointmentCard(
+    BuildContext context,
+    QueryDocumentSnapshot doc, {
+    required bool showCancel,
+  }) {
+    final data = doc.data() as Map<String, dynamic>;
+    final date = (data['date'] as Timestamp).toDate();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            data['serviceName'] ?? '',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            data['storeName'] ?? '',
+            style: const TextStyle(color: Colors.grey),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              const Icon(Icons.calendar_today, size: 16),
+              const SizedBox(width: 6),
+              Text('${date.day}/${date.month}/${date.year}'),
+              const SizedBox(width: 12),
+              const Icon(Icons.access_time, size: 16),
+              const SizedBox(width: 6),
+              Text(data['time'] ?? ''),
+            ],
+          ),
+          if (showCancel) ...[
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () => _cancelAppointment(context, doc),
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // ---------------- CANCEL LOGIC ----------------
+
+  static Future<void> _cancelAppointment(
+    BuildContext context,
+    QueryDocumentSnapshot doc,
+  ) async {
+    final data = doc.data() as Map<String, dynamic>;
+    final firestore = FirebaseFirestore.instance;
+
+    final bookingId =
+        '${data['storeName']}_${(data['date'] as Timestamp).toDate().toIso8601String().split('T')[0]}_${data['time']}';
+
+    try {
+      // 1️⃣ Update user booking status
+      await doc.reference.update({'status': 'cancelled'});
+
+      // 2️⃣ Remove global booking (free slot)
+      await firestore.collection('bookings').doc(bookingId).delete();
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Appointment cancelled')));
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to cancel appointment')),
+      );
+    }
+  }
+}

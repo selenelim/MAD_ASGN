@@ -9,6 +9,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 
+Set<String> bookedSlots = {};
+
 class BookAppointmentScreen extends StatefulWidget {
   final String serviceName;
   final int price;
@@ -26,6 +28,7 @@ class BookAppointmentScreen extends StatefulWidget {
   @override
   State<BookAppointmentScreen> createState() => _BookAppointmentScreenState();
 }
+
 
 class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   String? selectedPetId;
@@ -60,6 +63,28 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
     if (!mounted) return;
     setState(() => pets = snapshot.docs);
   }
+  Future<void> _loadBookedSlots() async {
+  if (selectedDate == null) return;
+
+  final dateKey = selectedDate!.toIso8601String().split('T')[0];
+
+  final snapshot = await FirebaseFirestore.instance
+      .collection('bookings')
+      .where('storeName', isEqualTo: widget.storeName)
+      .get();
+
+  setState(() {
+    bookedSlots = snapshot.docs
+        .where((d) =>
+            (d['date'] as Timestamp)
+                .toDate()
+                .toIso8601String()
+                .startsWith(dateKey))
+        .map((d) => d['time'] as String)
+        .toSet();
+  });
+}
+
 
   Map<String, dynamic> get selectedPetData {
     final petDoc = pets.firstWhere((p) => p.id == selectedPetId);
@@ -282,45 +307,62 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
       ),
       trailing: const Icon(Icons.calendar_today),
       onTap: () async {
-        final picked = await showDatePicker(
-          context: context,
-          firstDate: DateTime.now(),
-          lastDate: DateTime.now().add(const Duration(days: 365)),
-          initialDate: selectedDate ?? DateTime.now(),
-        );
-        if (picked != null) setState(() => selectedDate = picked);
-      },
+  final picked = await showDatePicker(
+    context: context,
+    firstDate: DateTime.now(),
+    lastDate: DateTime.now().add(const Duration(days: 365)),
+    initialDate: selectedDate ?? DateTime.now(),
+  );
+
+  if (picked != null) {
+    setState(() => selectedDate = picked);
+    await _loadBookedSlots();
+  }
+},
+
     );
   }
 
   Widget _timeSlots() {
-    final slots = [
-      '9:00 AM',
-      '10:00 AM',
-      '11:00 AM',
-      '12:00 PM',
-      '1:00 PM',
-      '2:00 PM',
-      '3:00 PM',
-      '4:00 PM',
-      '5:00 PM'
-    ];
+  final slots = [
+    '9:00 AM',
+    '10:00 AM',
+    '11:00 AM',
+    '12:00 PM',
+    '1:00 PM',
+    '2:00 PM',
+    '3:00 PM',
+    '4:00 PM',
+    '5:00 PM'
+  ];
 
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: slots.map((slot) {
-        final selected = slot == selectedTime;
-        return ChoiceChip(
-          label: Text(slot),
-          selected: selected,
-          onSelected: (_) => setState(() => selectedTime = slot),
-          selectedColor: const Color(0xFF713500),
-          labelStyle: TextStyle(color: selected ? Colors.white : Colors.black),
-        );
-      }).toList(),
-    );
-  }
+  return Wrap(
+    spacing: 8,
+    runSpacing: 8,
+    children: slots.map((slot) {
+      final selected = slot == selectedTime; // 👈 THIS LINE
+      final isBooked = bookedSlots.contains(slot);
+
+      return ChoiceChip(
+        label: Text(slot),
+        selected: selected,
+        onSelected: isBooked
+            ? null
+            : (_) => setState(() => selectedTime = slot),
+        selectedColor: const Color(0xFF713500),
+        disabledColor: Colors.grey[300],
+        labelStyle: TextStyle(
+          color: isBooked
+              ? Colors.grey
+              : selected
+                  ? Colors.white
+                  : Colors.black,
+        ),
+      );
+    }).toList(),
+  );
+}
+
 
   Widget _notesField() {
     return TextField(

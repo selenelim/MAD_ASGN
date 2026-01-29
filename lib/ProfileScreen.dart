@@ -1,3 +1,5 @@
+
+import 'package:draft_asgn/MyAppointmentsScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:draft_asgn/HomeScreen.dart';
 
@@ -61,9 +63,24 @@ class ProfileScreen extends StatelessWidget {
               label: 'Change Password',
             ),
             _profileItem(
+  icon: Icons.calendar_month,
+  label: 'My Appointments',
+  onTap: () {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => const MyAppointmentsScreen(),
+    ),
+  );
+},
+
+),
+
+            _profileItem(
               icon: Icons.settings,
               label: 'Settings',
             ),
+            
 
             const Spacer(),
 
@@ -90,10 +107,13 @@ class ProfileScreen extends StatelessWidget {
   }
 
   static Widget _profileItem({
-    required IconData icon,
-    required String label,
-  }) {
-    return Container(
+  required IconData icon,
+  required String label,
+  VoidCallback? onTap,
+}) {
+  return GestureDetector(
+    onTap: onTap,
+    child: Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
       decoration: BoxDecoration(
@@ -114,6 +134,8 @@ class ProfileScreen extends StatelessWidget {
           const Icon(Icons.chevron_right, color: Colors.grey),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
+
 }
