@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:draft_asgn/HomeScreen.dart';
 
 class ProviderAddShopScreen extends StatefulWidget {
   const ProviderAddShopScreen({super.key});
@@ -16,18 +15,13 @@ class _ProviderAddShopScreenState extends State<ProviderAddShopScreen> {
   final nameCtrl = TextEditingController();
   final phoneCtrl = TextEditingController();
   final addressCtrl = TextEditingController();
-
   final mapsUrlCtrl = TextEditingController();
-
   final latCtrl = TextEditingController();
   final lngCtrl = TextEditingController();
 
   String category = 'grooming';
   bool isPublished = true;
   bool loading = false;
-
-  static const Color brown = HomeScreen.brown;
-  static const Color lightCream = HomeScreen.lightCream;
 
   @override
   void dispose() {
@@ -80,192 +74,192 @@ class _ProviderAddShopScreenState extends State<ProviderAddShopScreen> {
         const SnackBar(content: Text("Shop added ✅")),
       );
       Navigator.pop(context);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
     } finally {
       if (mounted) setState(() => loading = false);
     }
   }
 
-  InputDecoration _input(String label, {String? hint}) {
-    return InputDecoration(
-      labelText: label,
-      hintText: hint,
-      labelStyle: const TextStyle(color: brown, fontWeight: FontWeight.w600),
-      floatingLabelStyle: const TextStyle(color: brown, fontWeight: FontWeight.w700),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: brown.withOpacity(0.35), width: 1.4),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: brown, width: 2.2),
-      ),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      filled: true,
-      fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
+    final cream = theme.scaffoldBackgroundColor;
+
     return Scaffold(
-      backgroundColor: lightCream,
+      
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: Colors.black,
-        centerTitle: true,
-        title: Image.asset('assets/img/pawpal_logo.png', height: 65),
-      ),
+  backgroundColor: Colors.transparent, // 🔹 same as Edit Shop
+  elevation: 0,
+  centerTitle: true,
+  title: Image.asset(
+    'assets/img/pawpal_logo.png',
+    height: 65,
+  ),
+),
+
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
           child: ListView(
             children: [
-              // ===== Top info card (same vibe) =====
+              /// ===== HEADER CARD (theme-based) =====
               Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: brown,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "New Shop",
-                      style: TextStyle(
-                        color: lightCream,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      "Fill in the details below to add your shop.",
-                      style: TextStyle(color: lightCream),
-                    ),
-                  ],
-                ),
-              ),
+  width: double.infinity,
+  padding: const EdgeInsets.all(16),
+  decoration: BoxDecoration(
+    color: Theme.of(context).appBarTheme.backgroundColor, 
+    borderRadius: BorderRadius.circular(20),
+  ),
+  child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        "New Shop",
+        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+          color: Theme.of(context).scaffoldBackgroundColor, 
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+      const SizedBox(height: 8),
+      Text(
+        "Fill in the details below to add your shop.",
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: Theme.of(context).scaffoldBackgroundColor, 
+        ),
+      ),
+    ],
+  ),
+),
+
+
 
               const SizedBox(height: 16),
 
               TextFormField(
                 controller: nameCtrl,
-                decoration: _input("Shop name"),
-                validator: (v) => (v == null || v.trim().isEmpty) ? "Required" : null,
+                decoration:
+                    const InputDecoration(labelText: "Shop name"),
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? "Required" : null,
               ),
+
               const SizedBox(height: 12),
 
               TextFormField(
                 controller: phoneCtrl,
-                decoration: _input("Phone"),
-                validator: (v) => (v == null || v.trim().isEmpty) ? "Required" : null,
+                decoration:
+                    const InputDecoration(labelText: "Phone"),
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? "Required" : null,
               ),
+
               const SizedBox(height: 12),
 
               TextFormField(
                 controller: addressCtrl,
-                decoration: _input("Address"),
-                validator: (v) => (v == null || v.trim().isEmpty) ? "Required" : null,
+                decoration:
+                    const InputDecoration(labelText: "Address"),
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? "Required" : null,
               ),
 
               const SizedBox(height: 18),
-              const Text(
+
+              Text(
                 "Google Maps Link (for Directions)",
-                style: TextStyle(fontWeight: FontWeight.bold, color: brown),
+                style: theme.textTheme.bodyMedium
+                    ?.copyWith(fontWeight: FontWeight.bold),
               ),
+
               const SizedBox(height: 8),
+
               TextFormField(
                 controller: mapsUrlCtrl,
-                decoration: _input(
-                  "Paste Google Maps link",
-                  hint: "https://maps.app.goo.gl/xxxxx",
+                decoration: const InputDecoration(
+                  labelText: "Paste Google Maps link",
+                  hintText: "https://maps.app.goo.gl/xxxxx",
                 ),
               ),
 
               const SizedBox(height: 18),
-              const Text(
+
+              Text(
                 "Location (for distance calculation)",
-                style: TextStyle(fontWeight: FontWeight.bold, color: brown),
+                style: theme.textTheme.bodyMedium
+                    ?.copyWith(fontWeight: FontWeight.bold),
               ),
+
               const SizedBox(height: 8),
 
               TextFormField(
                 controller: latCtrl,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: _input("Latitude"),
-                validator: (v) => (v == null || v.trim().isEmpty) ? "Required" : null,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration:
+                    const InputDecoration(labelText: "Latitude"),
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? "Required" : null,
               ),
+
               const SizedBox(height: 12),
 
               TextFormField(
                 controller: lngCtrl,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: _input("Longitude"),
-                validator: (v) => (v == null || v.trim().isEmpty) ? "Required" : null,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration:
+                    const InputDecoration(labelText: "Longitude"),
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? "Required" : null,
               ),
 
               const SizedBox(height: 18),
+
               DropdownButtonFormField<String>(
                 value: category,
-                decoration: _input("Category"),
-                dropdownColor: Colors.white,
+                decoration:
+                    const InputDecoration(labelText: "Category"),
                 items: const [
-                  DropdownMenuItem(value: 'grooming', child: Text('Grooming')),
+                  DropdownMenuItem(
+                      value: 'grooming', child: Text('Grooming')),
                   DropdownMenuItem(value: 'vet', child: Text('Vet')),
-                  DropdownMenuItem(value: 'training', child: Text('Training')),
-                  DropdownMenuItem(value: 'boarding', child: Text('Boarding')),
+                  DropdownMenuItem(
+                      value: 'training', child: Text('Training')),
+                  DropdownMenuItem(
+                      value: 'boarding', child: Text('Boarding')),
                 ],
                 onChanged: (v) => setState(() => category = v ?? 'grooming'),
               ),
 
               const SizedBox(height: 12),
+
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text(
+                title: Text(
                   "Published",
-                  style: TextStyle(fontWeight: FontWeight.bold, color: brown),
+                  style: theme.textTheme.bodyMedium
+                      ?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 value: isPublished,
-                activeColor: brown,
                 onChanged: (v) => setState(() => isPublished = v),
               ),
 
               const SizedBox(height: 16),
+
               SizedBox(
                 height: 52,
-                width: double.infinity,
                 child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: brown,
-                    foregroundColor: lightCream,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(26),
-                    ),
-                  ),
                   onPressed: loading ? null : _save,
                   child: loading
                       ? const SizedBox(
                           width: 22,
                           height: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: lightCream,
-                          ),
+                          child: CircularProgressIndicator(strokeWidth: 2.5),
                         )
                       : const Text(
                           "Save",
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                 ),
               ),
@@ -276,3 +270,4 @@ class _ProviderAddShopScreenState extends State<ProviderAddShopScreen> {
     );
   }
 }
+

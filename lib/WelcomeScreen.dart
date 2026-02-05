@@ -8,7 +8,7 @@ class WelcomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: HomeScreen.lightCream,
+      
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -27,9 +27,9 @@ class WelcomeScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 6),
-                const Text(
+                 Text(
                   'Professional Pet Care',
-                  style: TextStyle(color: Colors.black54),
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
 
                 const SizedBox(height: 22),
@@ -59,19 +59,15 @@ class WelcomeScreen extends StatelessWidget {
                 const SizedBox(height: 26),
 
                 // Text
-                const Text(
+                Text(
                   'Welcome to PawPal',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    color: HomeScreen.brown,
-                  ),
+                  style: Theme.of(context).textTheme.titleLarge,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Your trusted partner for pet grooming, vaccinations,\nand wellness appointments',
-                  style: TextStyle(color: Colors.black54, height: 1.35),
+                  style: Theme.of(context).textTheme.bodySmall,
                   textAlign: TextAlign.center,
                 ),
 
@@ -88,17 +84,12 @@ class WelcomeScreen extends StatelessWidget {
                         MaterialPageRoute(builder: (_) => LoginScreen()),
                       );
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: HomeScreen.brown,
-                      foregroundColor: HomeScreen.lightCream,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      child: Text(
+                        'Get Started',
+                        style: TextStyle(fontWeight: FontWeight.bold),
                       ),
-                    ),
-                    child: const Text(
-                      'Get Started',
-                      style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),

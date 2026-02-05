@@ -117,7 +117,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
           height: 65,
         ),
       ),
-      backgroundColor: const Color.fromRGBO(253, 251, 215, 1),
+      
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -131,14 +131,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
+                 Text(
                   'PawPal',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
+                  style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Create your account',
-                  style: TextStyle(color: Colors.grey[700]),
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
                 const SizedBox(height: 24),
 
@@ -147,9 +147,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   decoration: InputDecoration(
                     labelText: 'Username',
                     prefixIcon: const Icon(Icons.account_circle_outlined),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -159,9 +156,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   decoration: InputDecoration(
                     labelText: 'Email Address',
                     prefixIcon: const Icon(Icons.email_outlined),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                    
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -180,9 +175,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         setState(() => passwordVisible = !passwordVisible);
                       },
                     ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                   
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -201,9 +194,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         setState(() => confirmPasswordVisible = !confirmPasswordVisible);
                       },
                     ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                   
                   ),
                 ),
 
@@ -213,14 +204,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: isLoading ? null : _signUp,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color.fromRGBO(82, 45, 11, 1),
-                      foregroundColor: const Color.fromRGBO(253, 251, 215, 1),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
                     child: isLoading
                         ? const SizedBox(
                             height: 22,

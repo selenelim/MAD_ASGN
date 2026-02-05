@@ -9,10 +9,9 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: HomeScreen.lightCream,
+      
       appBar: AppBar(
-        backgroundColor: HomeScreen.brown,
-        elevation: 0,
+        
         title: const Text('My Profile'),
       ),
       body: Padding(
@@ -35,34 +34,35 @@ class ProfileScreen extends StatelessWidget {
             const SizedBox(height: 16),
 
             // Username placeholder
-            const Text(
+             Text(
               'Your Name',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(context)
+                  .textTheme
+                  .titleLarge,
             ),
 
             const SizedBox(height: 4),
 
             // Email placeholder
-            const Text(
+             Text(
               'email@example.com',
-              style: TextStyle(color: Colors.grey),
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall,
             ),
 
             const SizedBox(height: 30),
 
             // Info cards (UI only)
-            _profileItem(
+            _profileItem(context,
               icon: Icons.edit,
               label: 'Edit Profile',
             ),
-            _profileItem(
+            _profileItem(context,
               icon: Icons.lock,
               label: 'Change Password',
             ),
-            _profileItem(
+            _profileItem(context,
   icon: Icons.calendar_month,
   label: 'My Appointments',
   onTap: () {
@@ -76,7 +76,7 @@ class ProfileScreen extends StatelessWidget {
 
 ),
 
-            _profileItem(
+            _profileItem(context,
               icon: Icons.settings,
               label: 'Settings',
             ),
@@ -89,14 +89,7 @@ class ProfileScreen extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {}, // no function yet
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: HomeScreen.brown,
-                  foregroundColor: HomeScreen.lightCream,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                ),
+                
                 child: const Text('Logout'),
               ),
             ),
@@ -106,7 +99,7 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  static Widget _profileItem({
+  static Widget _profileItem(BuildContext context,{
   required IconData icon,
   required String label,
   VoidCallback? onTap,
@@ -122,13 +115,15 @@ class ProfileScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(icon, color: HomeScreen.brown),
+          Icon(icon, color: Theme.of(context)
+                  .appBarTheme
+                  .backgroundColor,),
           const SizedBox(width: 12),
           Text(
             label,
-            style: const TextStyle(
-              fontWeight: FontWeight.w500,
-            ),
+            style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
           ),
           const Spacer(),
           const Icon(Icons.chevron_right, color: Colors.grey),

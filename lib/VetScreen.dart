@@ -16,8 +16,7 @@ class VetScreen extends StatefulWidget {
 }
 
 class _VetScreenState extends State<VetScreen> {
-  static const Color brown = Color.fromRGBO(75, 40, 17, 1);
-  static const Color lightCream = Color.fromRGBO(253, 251, 215, 1);
+  
 
   Position? _userPos;
 
@@ -59,7 +58,7 @@ class _VetScreenState extends State<VetScreen> {
         .snapshots();
 
     return Scaffold(
-      backgroundColor: lightCream,
+      
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -72,9 +71,9 @@ class _VetScreenState extends State<VetScreen> {
         children: [
           _infoCard(),
           const SizedBox(height: 20),
-          const Text(
+           Text(
             'Vet services near you',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 12),
           StreamBuilder<QuerySnapshot>(
@@ -187,37 +186,37 @@ class _VetScreenState extends State<VetScreen> {
 
   Widget _infoCard() {
     return Container(
+      
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: brown,
+        
+         color: Theme.of(context).appBarTheme.backgroundColor,
         borderRadius: BorderRadius.circular(20),
       ),
-      child: const Column(
+      child:  Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Vet',
-            style: TextStyle(
-              color: HomeScreen.lightCream,
-              fontSize: 28,
-              fontWeight: FontWeight.w900,
-            ),
+            style: Theme.of(context)
+                .textTheme
+                .titleLarge?.copyWith(color: Theme.of(context).scaffoldBackgroundColor), 
           ),
           SizedBox(height: 12),
           Text(
             'Vet services including consultation, vaccination, check-ups and treatment.',
-            style: TextStyle(color: HomeScreen.lightCream),
+             style: TextStyle(color: Theme.of(context).scaffoldBackgroundColor ),
           ),
           SizedBox(height: 12),
           Row(
             children: [
-              Icon(Icons.access_time, color: HomeScreen.lightCream, size: 18),
+              Icon(Icons.access_time, color:Theme.of(context).scaffoldBackgroundColor, size: 18),
               SizedBox(width: 6),
-              Text('30–90 mins', style: TextStyle(color: HomeScreen.lightCream)),
+              Text('30–90 mins', style: TextStyle(color: Theme.of(context).scaffoldBackgroundColor)),
               SizedBox(width: 16),
-              Icon(Icons.attach_money, color: HomeScreen.lightCream, size: 18),
+              Icon(Icons.attach_money, color: Theme.of(context).scaffoldBackgroundColor, size: 18),
               SizedBox(width: 6),
-              Text('50 – 300', style: TextStyle(color: HomeScreen.lightCream)),
+              Text('50 – 300', style: TextStyle(color: Theme.of(context).scaffoldBackgroundColor)),
             ],
           ),
         ],
@@ -265,8 +264,7 @@ class _ShopCard extends StatelessWidget {
     required this.onTapDistance,
   });
 
-  static const Color brown = Color.fromRGBO(82, 45, 11, 1);
-
+  
   double _parsePrice(dynamic raw) {
     if (raw is num) return raw.toDouble();
     return double.tryParse(raw?.toString() ?? '') ?? 0.0;
@@ -293,60 +291,59 @@ class _ShopCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Material(
-        color: Colors.white,
+    return Card(
+       margin: const EdgeInsets.only(bottom: 16),
+      child: InkWell(
         borderRadius: BorderRadius.circular(20),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: onTapCard,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(name,
-                    style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
+        onTap: onTapCard,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                name,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.star, color: Colors.orange, size: 18),
+                  const SizedBox(width: 6),
+                  Text(ratingText),
+                ],
+              ),
+              if (address.isNotEmpty) ...[
+                const SizedBox(height: 6),
                 Row(
                   children: [
-                    const Icon(Icons.star, color: Colors.orange, size: 18),
+                    const Icon(Icons.location_on, size: 18),
                     const SizedBox(width: 6),
-                    Text(ratingText),
+                    Expanded(
+                      child: Text(
+                        address,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ],
                 ),
-                if (address.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      const Icon(Icons.location_on, size: 18),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          address,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+              ],
                 const SizedBox(height: 8),
+
+                // Clickable distance / directions entry
                 Row(
                   children: [
-                    const Icon(Icons.directions_walk,
-                        size: 18, color: Colors.black54),
+                    const Icon(Icons.directions_walk, size: 18),
                     const SizedBox(width: 6),
                     InkWell(
                       onTap: onTapDistance,
                       child: Text(
                         distanceText,
                         style: TextStyle(
-                          color: onTapDistance == null
-                              ? Colors.black54
-                              : brown,
+                          
                           fontWeight: FontWeight.w700,
                           decoration: onTapDistance == null
                               ? TextDecoration.none
@@ -356,18 +353,21 @@ class _ShopCard extends StatelessWidget {
                     ),
                   ],
                 ),
+
                 const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    // ✅ auto-min price (no more shop.priceFrom)
                     FutureBuilder<double>(
                       future: _getMinActiveServicePrice(),
                       builder: (context, snap) {
-                        if (snap.connectionState ==
-                            ConnectionState.waiting) {
-                          return const Text(
+                        if (snap.connectionState == ConnectionState.waiting) {
+                          return  Text(
                             'Loading price...',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                            style: Theme.of(context)
+                .textTheme
+                .bodyMedium,
                           );
                         }
                         final priceFrom = snap.data ?? 0.0;
@@ -375,38 +375,28 @@ class _ShopCard extends StatelessWidget {
                           priceFrom > 0
                               ? 'Starting from \$${priceFrom.toStringAsFixed(0)}'
                               : 'Prices vary',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
-                          ),
+                          style: Theme.of(context)
+              .textTheme
+              .bodyMedium
                         );
                       },
                     ),
-                    InkWell(
-                      onTap: onTapViewServices,
-                      borderRadius: BorderRadius.circular(18),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: brown,
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        child: const Text(
-                          "View Services",
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ),
+
+                     ElevatedButton(
+      onPressed: onTapViewServices,
+      child: const Text(
+        'View Services',
+        style: TextStyle(fontWeight: FontWeight.bold),
+      ),
+    ),
+  ],
+),
                   ],
                 ),
-              ],
-            ),
-          ),
         ),
       ),
-    );
+            
+            );
+  
   }
 }

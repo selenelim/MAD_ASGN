@@ -6,11 +6,10 @@ class ManageServicesScreen extends StatelessWidget {
   final String shopId;
   const ManageServicesScreen({super.key, required this.shopId});
 
-  static const Color brown = HomeScreen.brown;
-  static const Color lightCream = HomeScreen.lightCream;
-
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     final servicesRef = FirebaseFirestore.instance
         .collection('shops')
         .doc(shopId)
@@ -19,17 +18,14 @@ class ManageServicesScreen extends StatelessWidget {
     final stream = servicesRef.orderBy('createdAt', descending: true).snapshots();
 
     return Scaffold(
-      backgroundColor: lightCream,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: Colors.black,
         centerTitle: true,
         title: Image.asset('assets/img/pawpal_logo.png', height: 65),
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: brown,
-        foregroundColor: Colors.white,
         onPressed: () {
           Navigator.push(
             context,
@@ -55,11 +51,11 @@ class ManageServicesScreen extends StatelessWidget {
 
           final docs = snap.data?.docs ?? [];
           if (docs.isEmpty) {
-            return const Center(
+            return Center(
               child: Text(
                 "No services yet.\nTap + to add your first service.",
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.black54),
+                style: theme.textTheme.bodyMedium,
               ),
             );
           }
@@ -67,31 +63,33 @@ class ManageServicesScreen extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              // Top header card (same vibe)
-              Container(
+              // ===== HEADER CARD (FIXED WIDTH) =====
+              SizedBox(
                 width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: brown,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Add Services",
-                      style: TextStyle(
-                        color: lightCream,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Manage Services",
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          color: theme.colorScheme.onPrimary,
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      "Add, edit, activate or delete your services.",
-                      style: TextStyle(color: lightCream),
-                    ),
-                  ],
+                      const SizedBox(height: 8),
+                      Text(
+                        "Add, edit, activate or delete your services.",
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
@@ -106,25 +104,13 @@ class ManageServicesScreen extends StatelessWidget {
                 final isActive = (m['isActive'] ?? true) == true;
 
                 return Container(
-                  width: double.infinity,
                   margin: const EdgeInsets.only(bottom: 14),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: theme.cardTheme.color,
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(color: Colors.black12),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x14000000),
-                        blurRadius: 6,
-                        offset: Offset(0, 3),
-                      ),
-                    ],
                   ),
                   child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
-                    ),
                     title: Text(
                       name,
                       style: const TextStyle(fontWeight: FontWeight.bold),
@@ -173,6 +159,8 @@ class ManageServicesScreen extends StatelessWidget {
   }
 }
 
+// ================================================================
+
 class AddEditServiceScreen extends StatefulWidget {
   final String shopId;
   final String? serviceId;
@@ -188,9 +176,6 @@ class AddEditServiceScreen extends StatefulWidget {
 }
 
 class _AddEditServiceScreenState extends State<AddEditServiceScreen> {
-  static const Color brown = HomeScreen.brown;
-  static const Color lightCream = HomeScreen.lightCream;
-
   final _formKey = GlobalKey<FormState>();
 
   final nameCtrl = TextEditingController();
@@ -202,15 +187,6 @@ class _AddEditServiceScreenState extends State<AddEditServiceScreen> {
   bool loading = false;
 
   @override
-  void dispose() {
-    nameCtrl.dispose();
-    descCtrl.dispose();
-    durationCtrl.dispose();
-    priceCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
   void initState() {
     super.initState();
     if (widget.serviceId != null) {
@@ -218,27 +194,13 @@ class _AddEditServiceScreenState extends State<AddEditServiceScreen> {
     }
   }
 
-  InputDecoration _input(String label, {String? hint}) {
-    return InputDecoration(
-      labelText: label,
-      hintText: hint,
-      labelStyle: const TextStyle(color: brown, fontWeight: FontWeight.w600),
-      floatingLabelStyle: const TextStyle(color: brown, fontWeight: FontWeight.w700),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: brown.withOpacity(0.35), width: 1.4),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: brown, width: 2.2),
-      ),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      filled: true,
-      fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-    );
+  @override
+  void dispose() {
+    nameCtrl.dispose();
+    descCtrl.dispose();
+    durationCtrl.dispose();
+    priceCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -295,19 +257,16 @@ class _AddEditServiceScreenState extends State<AddEditServiceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final isEdit = widget.serviceId != null;
 
     return Scaffold(
-      backgroundColor: lightCream,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: Colors.black,
         centerTitle: true,
-        title: Text(
-          isEdit ? "Edit Service" : "Add Service",
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
+        title: Text(isEdit ? "Edit Service" : "Add Service"),
       ),
       body: loading
           ? const Center(child: CircularProgressIndicator())
@@ -317,71 +276,76 @@ class _AddEditServiceScreenState extends State<AddEditServiceScreen> {
                 key: _formKey,
                 child: ListView(
                   children: [
-                    Container(
+                    // ===== HEADER CARD =====
+                    SizedBox(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: brown,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            isEdit ? "Update Service" : "New Service",
-                            style: const TextStyle(
-                              color: lightCream,
-                              fontSize: 20,
-                              fontWeight: FontWeight.w900,
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              isEdit ? "Update Service" : "New Service",
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                color: theme.colorScheme.onPrimary,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            isEdit
-                                ? "Edit the fields and save changes."
-                                : "Fill in the details to add a service.",
-                            style: const TextStyle(color: lightCream),
-                          ),
-                        ],
+                            const SizedBox(height: 8),
+                            Text(
+                              isEdit
+                                  ? "Edit the fields and save changes."
+                                  : "Fill in the details to add a service.",
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.onPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
+
                     const SizedBox(height: 16),
 
                     TextFormField(
                       controller: nameCtrl,
-                      decoration: _input("Service name"),
-                      validator: (v) => (v == null || v.trim().isEmpty) ? "Required" : null,
+                      decoration: const InputDecoration(labelText: "Service name"),
+                      validator: (v) =>
+                          (v == null || v.trim().isEmpty) ? "Required" : null,
                     ),
                     const SizedBox(height: 12),
 
                     TextFormField(
                       controller: descCtrl,
-                      decoration: _input("Description (optional)"),
+                      decoration:
+                          const InputDecoration(labelText: "Description (optional)"),
                     ),
                     const SizedBox(height: 12),
 
                     TextFormField(
                       controller: durationCtrl,
-                      decoration: _input("Duration (e.g. 45 mins)"),
+                      decoration:
+                          const InputDecoration(labelText: "Duration (e.g. 45 mins)"),
                     ),
                     const SizedBox(height: 12),
 
                     TextFormField(
                       controller: priceCtrl,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: _input("Price"),
-                      validator: (v) => (v == null || v.trim().isEmpty) ? "Required" : null,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      decoration: const InputDecoration(labelText: "Price"),
+                      validator: (v) =>
+                          (v == null || v.trim().isEmpty) ? "Required" : null,
                     ),
                     const SizedBox(height: 12),
 
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: const Text(
-                        "Active",
-                        style: TextStyle(fontWeight: FontWeight.bold, color: brown),
-                      ),
+                      title: const Text("Active"),
                       value: isActive,
-                      activeColor: brown,
                       onChanged: (v) => setState(() => isActive = v),
                     ),
 
@@ -389,17 +353,10 @@ class _AddEditServiceScreenState extends State<AddEditServiceScreen> {
                     SizedBox(
                       height: 52,
                       child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: brown,
-                          foregroundColor: lightCream,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(26),
-                          ),
-                        ),
                         onPressed: _save,
                         child: const Text(
                           "Save",
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
                     ),

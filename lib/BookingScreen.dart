@@ -1,6 +1,4 @@
 // ===================== lib/BookingScreen.dart =====================
-// Your booking page, updated to accept service + store details from ShopServicesScreen,
-// and pass those into BookingConfirmationScreen instead of hardcoding.
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:draft_asgn/AddPetScreen.dart';
@@ -18,7 +16,6 @@ class BookAppointmentScreen extends StatefulWidget {
   final String storeAddress;
   final String shopId;
 
-
   const BookAppointmentScreen({
     super.key,
     required this.serviceName,
@@ -31,7 +28,6 @@ class BookAppointmentScreen extends StatefulWidget {
   @override
   State<BookAppointmentScreen> createState() => _BookAppointmentScreenState();
 }
-
 
 class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   String? selectedPetId;
@@ -66,28 +62,28 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
     if (!mounted) return;
     setState(() => pets = snapshot.docs);
   }
+
   Future<void> _loadBookedSlots() async {
-  if (selectedDate == null) return;
+    if (selectedDate == null) return;
 
-  final dateKey = selectedDate!.toIso8601String().split('T')[0];
+    final dateKey = selectedDate!.toIso8601String().split('T')[0];
 
-  final snapshot = await FirebaseFirestore.instance
-      .collection('bookings')
-      .where('storeName', isEqualTo: widget.storeName)
-      .get();
+    final snapshot = await FirebaseFirestore.instance
+        .collection('bookings')
+        .where('storeName', isEqualTo: widget.storeName)
+        .get();
 
-  setState(() {
-    bookedSlots = snapshot.docs
-        .where((d) =>
-            (d['date'] as Timestamp)
-                .toDate()
-                .toIso8601String()
-                .startsWith(dateKey))
-        .map((d) => d['time'] as String)
-        .toSet();
-  });
-}
-
+    setState(() {
+      bookedSlots = snapshot.docs
+          .where((d) =>
+              (d['date'] as Timestamp)
+                  .toDate()
+                  .toIso8601String()
+                  .startsWith(dateKey))
+          .map((d) => d['time'] as String)
+          .toSet();
+    });
+  }
 
   Map<String, dynamic> get selectedPetData {
     final petDoc = pets.firstWhere((p) => p.id == selectedPetId);
@@ -105,57 +101,60 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFDFBD4),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+
+      // ===== APP BAR =====
       appBar: AppBar(
-        backgroundColor: const Color(0xFF713500),
-        title: const Text(
-          'Book Appointment',
-          style: TextStyle(color: Color(0xFFFDFBD4)),
-        ),
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+        centerTitle: true,
+        title: const Text('Book Appointment'),
         leading: const BackButton(),
       ),
+
+      // ===== BODY =====
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Optional: show what they are booking
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.black12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.serviceName,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(widget.storeName, style: const TextStyle(color: Colors.black54)),
-                  Text(widget.storeAddress, style: const TextStyle(color: Colors.black54)),
-                  const SizedBox(height: 8),
-                  Text(
-                    "\$${widget.price}",
-                    style: const TextStyle(
-                      color: Color(0xFF713500),
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+            // ===== SERVICE SUMMARY CARD =====
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.serviceName,
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleLarge,
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 6),
+                    Text(widget.storeName),
+                    Text(widget.storeAddress),
+                    const SizedBox(height: 8),
+                    Text(
+                      "\$${widget.price}",
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleLarge
+                          ?.copyWith(
+                            color:
+                                Theme.of(context).colorScheme.primary,
+                          ),
+                    ),
+                  ],
+                ),
               ),
             ),
 
             const SizedBox(height: 22),
 
-            // PET SELECTION
-            const Text(
+            // ===== PET SELECTION =====
+            Text(
               'Which pet is this booking for?',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 12),
 
@@ -183,7 +182,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
         ),
       ),
 
-      // BOTTOM BUTTON
+      // ===== BOTTOM BUTTON =====
       bottomNavigationBar: _canProceed()
           ? Padding(
               padding: const EdgeInsets.all(16),
@@ -207,14 +206,10 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF713500),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: const StadiumBorder(),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: const Text(
-                  'Continue to Confirmation',
-                  style: TextStyle(color: Color(0xFFFDFBD4)),
-                ),
+                child: const Text('Continue to Confirmation'),
               ),
             )
           : null,
@@ -235,18 +230,8 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   Widget _addPetButton() {
     return OutlinedButton.icon(
       onPressed: _goAddPet,
-      icon: const Icon(Icons.add, color: Color(0xFF713500)),
-      label: const Text(
-        'Add New Pet',
-        style: TextStyle(
-          color: Color(0xFF713500),
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      style: OutlinedButton.styleFrom(
-        side: const BorderSide(color: Color(0xFF713500), width: 2),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      ),
+      icon: const Icon(Icons.add),
+      label: const Text('Add New Pet'),
     );
   }
 
@@ -265,37 +250,40 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
 
     return GestureDetector(
       onTap: () => setState(() => selectedPetId = pet.id),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
+      child: Card(
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected ? const Color(0xFF713500) : Colors.transparent,
+          side: BorderSide(
+            color: isSelected
+                ? Theme.of(context).colorScheme.primary
+                : Colors.transparent,
             width: 2,
           ),
         ),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 28,
-              backgroundImage: img,
-              backgroundColor: Colors.grey[300],
-              child: img == null ? const Icon(Icons.pets, color: Colors.white) : null,
-            ),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  data['name'] ?? 'Unnamed',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                Text('${data['species'] ?? ''} • ${data['breed'] ?? ''}'),
-              ],
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 28,
+                backgroundImage: img,
+                child: img == null
+                    ? const Icon(Icons.pets)
+                    : null,
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    data['name'] ?? 'Unnamed',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  Text('${data['species'] ?? ''} • ${data['breed'] ?? ''}'),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -311,75 +299,58 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
       ),
       trailing: const Icon(Icons.calendar_today),
       onTap: () async {
-  final picked = await showDatePicker(
-    context: context,
-    firstDate: DateTime.now(),
-    lastDate: DateTime.now().add(const Duration(days: 365)),
-    initialDate: selectedDate ?? DateTime.now(),
-  );
+        final picked = await showDatePicker(
+          context: context,
+          firstDate: DateTime.now(),
+          lastDate: DateTime.now().add(const Duration(days: 365)),
+          initialDate: selectedDate ?? DateTime.now(),
+        );
 
-  if (picked != null) {
-    setState(() => selectedDate = picked);
-    await _loadBookedSlots();
-  }
-},
-
+        if (picked != null) {
+          setState(() => selectedDate = picked);
+          await _loadBookedSlots();
+        }
+      },
     );
   }
 
   Widget _timeSlots() {
-  final slots = [
-    '9:00 AM',
-    '10:00 AM',
-    '11:00 AM',
-    '12:00 PM',
-    '1:00 PM',
-    '2:00 PM',
-    '3:00 PM',
-    '4:00 PM',
-    '5:00 PM'
-  ];
+    final slots = [
+      '9:00 AM',
+      '10:00 AM',
+      '11:00 AM',
+      '12:00 PM',
+      '1:00 PM',
+      '2:00 PM',
+      '3:00 PM',
+      '4:00 PM',
+      '5:00 PM'
+    ];
 
-  return Wrap(
-    spacing: 8,
-    runSpacing: 8,
-    children: slots.map((slot) {
-      final selected = slot == selectedTime; // 👈 THIS LINE
-      final isBooked = bookedSlots.contains(slot);
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: slots.map((slot) {
+        final selected = slot == selectedTime;
+        final isBooked = bookedSlots.contains(slot);
 
-      return ChoiceChip(
-        label: Text(slot),
-        selected: selected,
-        onSelected: isBooked
-            ? null
-            : (_) => setState(() => selectedTime = slot),
-        selectedColor: const Color(0xFF713500),
-        disabledColor: Colors.grey[300],
-        labelStyle: TextStyle(
-          color: isBooked
-              ? Colors.grey
-              : selected
-                  ? Colors.white
-                  : Colors.black,
-        ),
-      );
-    }).toList(),
-  );
-}
-
+        return ChoiceChip(
+          label: Text(slot),
+          selected: selected,
+          onSelected: isBooked
+              ? null
+              : (_) => setState(() => selectedTime = slot),
+        );
+      }).toList(),
+    );
+  }
 
   Widget _notesField() {
     return TextField(
       controller: notesController,
       maxLines: 3,
-      decoration: InputDecoration(
+      decoration: const InputDecoration(
         hintText: 'Additional notes (optional)',
-        filled: true,
-        fillColor: Colors.white,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
-        ),
       ),
     );
   }
@@ -387,3 +358,4 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   bool _canProceed() =>
       selectedPetId != null && selectedDate != null && selectedTime != null;
 }
+

@@ -11,9 +11,6 @@ class AddReviewScreen extends StatefulWidget {
 }
 
 class _AddReviewScreenState extends State<AddReviewScreen> {
-  static const Color brown = Color.fromRGBO(82, 45, 11, 1);
-  static const Color lightCream = Color.fromRGBO(253, 251, 215, 1);
-
   int rating = 5;
   final commentCtrl = TextEditingController();
   bool loading = false;
@@ -25,7 +22,8 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
     setState(() => loading = true);
 
     try {
-      final shopRef = FirebaseFirestore.instance.collection('shops').doc(widget.shopId);
+      final shopRef =
+          FirebaseFirestore.instance.collection('shops').doc(widget.shopId);
       final reviewRef = shopRef.collection('reviews').doc();
 
       await FirebaseFirestore.instance.runTransaction((tx) async {
@@ -68,11 +66,14 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    final bg = Theme.of(context).scaffoldBackgroundColor;
+
     return Scaffold(
-      backgroundColor: lightCream,
+      backgroundColor: bg,
       appBar: AppBar(
-        backgroundColor: lightCream,
-        foregroundColor: Colors.transparent,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         leading: const BackButton(color: Colors.black),
         title: Image.asset('assets/img/pawpal_logo.png', height: 65),
         centerTitle: true,
@@ -81,16 +82,22 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            const Align(
+             Align(
               alignment: Alignment.centerLeft,
-              child: Text('Add Review', style: TextStyle(fontWeight: FontWeight.w900,fontSize: 28)),
+              child: Text(
+                'Add Review',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
             ),
             const SizedBox(height: 8),
-            const Align(
+             Align(
               alignment: Alignment.centerLeft,
-              child: Text('Rating', style: TextStyle(fontWeight: FontWeight.bold,fontSize: 16)),
+              child: Text(
+                'Rating',
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
             ),
-            
+
             Row(
               children: List.generate(5, (i) {
                 final star = i + 1;
@@ -103,53 +110,51 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
                 );
               }),
             ),
+
             const SizedBox(height: 8),
+
             TextField(
               controller: commentCtrl,
               maxLines: 4,
-              cursorColor: brown,
+              cursorColor: primary,
               decoration: InputDecoration(
                 labelText: 'Comment (optional)',
-                labelStyle: TextStyle(
-                  color: brown,
-                ),
+                labelStyle: TextStyle(color: primary),
                 filled: true,
                 fillColor: Colors.white,
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(
-                    color: brown,
+                  borderSide: BorderSide(
+                    color: primary,
                     width: 1.5,
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide(
-                    color: brown,
-                    width: 2
-                  )
-                )
+                    color: primary,
+                    width: 2,
+                  ),
+                ),
               ),
             ),
+
             const SizedBox(height: 16),
+
             SizedBox(
               width: double.infinity,
               height: 48,
               child: ElevatedButton(
                 onPressed: loading ? null : _submit,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: brown,
-                  foregroundColor: Colors.white,
-                  shape: const StadiumBorder(),
-                ),
                 child: loading
                     ? const CircularProgressIndicator(color: Colors.white)
                     : const Text('Submit'),
               ),
-            )
+            ),
           ],
         ),
       ),
     );
   }
 }
+

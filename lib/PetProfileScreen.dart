@@ -38,7 +38,6 @@ class PetProfileScreen extends StatelessWidget {
           return Scaffold(
             appBar: AppBar(
               title: const Text('Pet Profile'),
-              backgroundColor: HomeScreen.brown,
             ),
             body: const Center(child: Text('Pet not found (maybe deleted).')),
           );
@@ -57,14 +56,14 @@ class PetProfileScreen extends StatelessWidget {
         }
 
         return Scaffold(
-          backgroundColor: HomeScreen.lightCream,
+         
           appBar: AppBar(
             centerTitle: true,
             title: Image.asset(
               'assets/img/pawpal_logo.png',
               height: 65,
             ),
-            backgroundColor: HomeScreen.lightCream
+            
           ),
           body: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
@@ -102,12 +101,6 @@ class PetProfileScreen extends StatelessWidget {
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(
-                          color: HomeScreen.brown,
-                          width: 2
-                        )
-                      ),
                       onPressed: () {
                         Navigator.push(
                           context,
@@ -119,56 +112,36 @@ class PetProfileScreen extends StatelessWidget {
                           ),
                         );
                       },
-                      icon: const Icon(
-                        Icons.edit,
-                        color: HomeScreen.brown,
-                      ),
-                      label: const Text('Edit',
-                        style: TextStyle(
-                          color: HomeScreen.brown,
-                        ),
-                      ),
+                      icon: const Icon(Icons.edit),
+                      label: const Text('Edit'),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: HomeScreen.brown,
-                        foregroundColor: HomeScreen.lightCream,
-                      ),
                       onPressed: () async {
                         final confirm = await showDialog<bool>(
                           context: context,
                           builder: (_) => AlertDialog(
-                            backgroundColor: HomeScreen.lightCream,
-                            title: const Text('Delete pet?',
-                              style: TextStyle(
-                                color: HomeScreen.brown,
-                                fontWeight: FontWeight.bold
-                              ),
+                            
+                            title:  Text('Delete pet?',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleLarge,
                             ),
                             content: const Text('This cannot be undone.',
-                              style: TextStyle(
-                                color: HomeScreen.brown
-                              ),
+                              
                             ),
                             actions: [
                               TextButton(
                                 onPressed: () => Navigator.pop(context, false),
-                                child: const Text('Cancel',
-                                  style: TextStyle(
-                                    color: HomeScreen.brown
-                                  ),
+                                child: const Text('Cancel'
                                 ),
                               ),
                               ElevatedButton(
                                 onPressed: () => Navigator.pop(context, true),
                                 child: const Text('Delete'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: HomeScreen.brown,
-                                  foregroundColor: HomeScreen.lightCream,
-                                  ),
+                                
                               ),
                             ],
                           ),

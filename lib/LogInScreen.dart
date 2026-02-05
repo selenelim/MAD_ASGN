@@ -52,14 +52,11 @@ class _LoginScreenState extends State<LoginScreen> {
             TextEditingController(text: emailController.text);
 
         return AlertDialog(
-          title: const Text(
+           title: Text(
             'Reset Password',
-            style: TextStyle(
-              color: Color.fromRGBO(82, 45, 11, 1),
-              fontWeight: FontWeight.bold,
-            ),
+            style: Theme.of(context).textTheme.titleLarge,
           ),
-          backgroundColor: const Color.fromRGBO(253, 251, 215, 1),
+          
           content: TextField(
             controller: resetEmailController,
             decoration: const InputDecoration(
@@ -108,10 +105,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   );
                 }
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color.fromRGBO(82, 45, 11, 1),
-                foregroundColor: const Color.fromRGBO(253, 251, 215, 1),
-              ),
+             
               child: const Text('Send'),
             ),
           ],
@@ -175,13 +169,16 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromRGBO(253, 251, 215, 1),
+      
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        title: Image.asset('assets/img/pawpal_logo.png', height: 65),
-      ),
+  backgroundColor: Colors.transparent, // override theme
+  elevation: 0,
+  centerTitle: true,
+  title: Image.asset(
+    'assets/img/pawpal_logo.png',
+    height: 65,
+  ),
+),
       body: Center(
         child: SingleChildScrollView(
           child: Container(
@@ -195,18 +192,14 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
+               Text(
                   'Welcome Back!',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                    color: Color.fromRGBO(82, 45, 11, 1),
-                  ),
+                  style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Sign in to continue caring for your pets',
-                  style: TextStyle(color: Color.fromRGBO(82, 45, 11, 1)),
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
                 const SizedBox(height: 24),
 
@@ -215,9 +208,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   decoration: InputDecoration(
                     labelText: 'Email Address',
                     prefixIcon: const Icon(Icons.email_outlined),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                    
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -252,13 +243,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         setState(() => rememberMe = value ?? false);
                       },
                     ),
-                    const Text(
-                      'Remember me',
-                      style: TextStyle(
-                        color: Color.fromRGBO(82, 45, 11, 1),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+                     const Text('Remember me'),
                     const Spacer(),
                     TextButton(
                       onPressed: _showForgotPasswordDialog,
@@ -275,14 +260,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: loading ? null : signIn,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color.fromRGBO(82, 45, 11, 1),
-                      foregroundColor: const Color.fromRGBO(253, 251, 215, 1),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
                     child: loading
                         ? const SizedBox(
                             height: 22,

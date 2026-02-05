@@ -20,9 +20,6 @@ class ShopServicesScreen extends StatelessWidget {
     required this.category,
   });
 
-  static const Color brown = Color.fromRGBO(82, 45, 11, 1);
-  static const Color lightCream = Color.fromRGBO(253, 251, 215, 1);
-
   String get _categoryTitle {
     switch (category) {
       case ServiceCategory.grooming:
@@ -51,7 +48,6 @@ class ShopServicesScreen extends StatelessWidget {
     }
   }
 
-  /// ✅ SAFE price parsing (int/double/string)
   double _parsePrice(dynamic raw) {
     if (raw is num) return raw.toDouble();
     return double.tryParse(raw?.toString() ?? '') ?? 0.0;
@@ -72,10 +68,9 @@ class ShopServicesScreen extends StatelessWidget {
         .snapshots();
 
     return Scaffold(
-      backgroundColor: lightCream,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: lightCream,
-        foregroundColor: Colors.transparent,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
         leading: const BackButton(color: Colors.black),
@@ -86,16 +81,13 @@ class ShopServicesScreen extends StatelessWidget {
         child: StreamBuilder<DocumentSnapshot>(
           stream: shopRef.snapshots(),
           builder: (context, shopSnap) {
-            if (shopSnap.connectionState == ConnectionState.waiting) {
+            if (!shopSnap.hasData) {
               return const Center(child: CircularProgressIndicator());
             }
-            if (shopSnap.hasError) {
-              return Text('Error: ${shopSnap.error}');
-            }
 
-            final shopData = (shopSnap.data?.data() as Map<String, dynamic>?) ?? {};
+            final shopData =
+                (shopSnap.data!.data() as Map<String, dynamic>?) ?? {};
 
-            // ✅ FIX owner field mismatch: support ownerUid OR ownerId
             final ownerUid =
                 (shopData['ownerUid'] ?? shopData['ownerId'] ?? '').toString();
 
@@ -106,7 +98,6 @@ class ShopServicesScreen extends StatelessWidget {
             final user = FirebaseAuth.instance.currentUser;
             final isOwner = user != null && user.uid == ownerUid;
 
-            // category from shop doc (optional), otherwise use passed in
             final shopCategoryStr = (shopData['category'] ?? '').toString();
             final effectiveCategory = shopCategoryStr.isEmpty
                 ? category
@@ -121,9 +112,9 @@ class ShopServicesScreen extends StatelessWidget {
                   ratingAvg: ratingAvg.toDouble(),
                   ratingCount: ratingCount.toInt(),
                 ),
+
                 const SizedBox(height: 12),
 
-                // ✅ Owner button
                 if (isOwner)
                   SizedBox(
                     width: double.infinity,
@@ -132,7 +123,8 @@ class ShopServicesScreen extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => ManageServicesScreen(shopId: shopId),
+                            builder: (_) =>
+                                ManageServicesScreen(shopId: shopId),
                           ),
                         );
                       },
@@ -142,23 +134,20 @@ class ShopServicesScreen extends StatelessWidget {
                   ),
 
                 const SizedBox(height: 18),
-                Text(
-                  _categoryTitle,
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                ),
+                Text(_categoryTitle,
+                    style: Theme.of(context).textTheme.titleLarge),
+
                 const SizedBox(height: 12),
 
-                // ================= SERVICES LIST =================
+                // ================= SERVICES =================
                 StreamBuilder<QuerySnapshot>(
                   stream: servicesStream,
                   builder: (context, snap) {
-                    if (snap.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
+                    if (!snap.hasData) {
+                      return const CircularProgressIndicator();
                     }
-                    if (snap.hasError) {
-                      return Text('Error: ${snap.error}');
-                    }
-                    final docs = snap.data?.docs ?? [];
+
+                    final docs = snap.data!.docs;
                     if (docs.isEmpty) {
                       return const Text('No services yet.');
                     }
@@ -166,13 +155,14 @@ class ShopServicesScreen extends StatelessWidget {
                     return Column(
                       children: docs.map((doc) {
                         final m = doc.data() as Map<String, dynamic>;
-
                         final service = Service(
                           id: doc.id,
                           category: effectiveCategory,
                           name: (m['name'] ?? '').toString(),
-                          description: (m['description'] ?? '').toString(),
-                          durationText: (m['durationText'] ?? '').toString(),
+                          description:
+                              (m['description'] ?? '').toString(),
+                          durationText:
+                              (m['durationText'] ?? '').toString(),
                           price: _parsePrice(m['price']),
                         );
 
@@ -204,19 +194,15 @@ class ShopServicesScreen extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'Reviews',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
+                    Text('Reviews',
+                        style: Theme.of(context).textTheme.titleLarge),
                     TextButton.icon(
-                      style: TextButton.styleFrom(
-                        foregroundColor: HomeScreen.brown
-                      ),
                       onPressed: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => AddReviewScreen(shopId: shopId),
+                            builder: (_) =>
+                                AddReviewScreen(shopId: shopId),
                           ),
                         );
                       },
@@ -230,45 +216,47 @@ class ShopServicesScreen extends StatelessWidget {
                 StreamBuilder<QuerySnapshot>(
                   stream: reviewsStream,
                   builder: (context, snap) {
-                    if (snap.connectionState == ConnectionState.waiting) {
-                      return const SizedBox.shrink();
-                    }
-                    if (snap.hasError) {
-                      return Text('Error: ${snap.error}');
-                    }
-                    final docs = snap.data?.docs ?? [];
-                    if (docs.isEmpty) {
+                    if (!snap.hasData || snap.data!.docs.isEmpty) {
                       return const Text('No reviews yet.');
                     }
 
                     return Column(
-                      children: docs.map((d) {
+                      children: snap.data!.docs.map((d) {
                         final m = d.data() as Map<String, dynamic>;
-                        final r = (m['rating'] ?? 0) as num;
-                        final c = (m['comment'] ?? '').toString();
+                        final rating = (m['rating'] ?? 0) as int;
+                        final comment =
+                            (m['comment'] ?? '').toString();
 
                         return Card(
-                          color: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
+                          margin: const EdgeInsets.only(bottom: 12),
                           child: ListTile(
                             leading: const Icon(Icons.person),
                             title: Row(
                               children: [
-                                Text('${r.toInt()}/5'),
-                                const SizedBox(width: 6),
+                                Text(
+                                  "$rating/5",
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
                                 ...List.generate(
                                   5,
                                   (i) => Icon(
-                                    i < r.toInt() ? Icons.star : Icons.star_border,
-                                    size: 16,
-                                    color: Colors.orange,
+                                    i < rating
+                                        ? Icons.star
+                                        : Icons.star_border,
+                                    size: 18,
+                                    color: Colors.orange, // ✅ FIX
                                   ),
                                 ),
                               ],
                             ),
-                            subtitle: Text(c.isEmpty ? 'No comment' : c),
+                            subtitle: Text(
+                              comment.isEmpty
+                                  ? 'No comment'
+                                  : comment,
+                            ),
                           ),
                         );
                       }).toList(),
@@ -284,6 +272,7 @@ class ShopServicesScreen extends StatelessWidget {
   }
 }
 
+// ================= HEADER CARD =================
 class _ShopHeaderCard extends StatelessWidget {
   final String shopName;
   final String address;
@@ -297,126 +286,108 @@ class _ShopHeaderCard extends StatelessWidget {
     required this.ratingCount,
   });
 
-  static const Color brown = Color.fromRGBO(82, 45, 11, 1);
-
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.black12),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: brown.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(14),
+    return SizedBox(
+      width: double.infinity,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).appBarTheme.backgroundColor,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              shopName,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color:
+                        Theme.of(context).scaffoldBackgroundColor,
+                  ),
             ),
-            child: const Icon(Icons.store, color: brown),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(height: 4),
+            Text(
+              address,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color:
+                        Theme.of(context).scaffoldBackgroundColor,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Row(
               children: [
-                Text(
-                  shopName,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                if (address.isNotEmpty)
-                  Text(address, style: const TextStyle(color: Colors.black54)),
-                const SizedBox(height: 6),
+                const Icon(Icons.star,
+                    color: Colors.orange, size: 18),
+                const SizedBox(width: 6),
                 Text(
                   ratingCount == 0
-                      ? 'No ratings yet'
-                      : '⭐ ${ratingAvg.toStringAsFixed(1)} ($ratingCount)',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                      ? 'No ratings'
+                      : '${ratingAvg.toStringAsFixed(1)} ($ratingCount)',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(
+                        color: Theme.of(context)
+                            .scaffoldBackgroundColor,
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
               ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
+// ================= SERVICE CARD =================
 class _ServiceCard extends StatelessWidget {
   final Service service;
   final VoidCallback onBook;
 
   const _ServiceCard({required this.service, required this.onBook});
 
-  static const Color brown = Color.fromRGBO(82, 45, 11, 1);
-
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return Card(
       margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.black12),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x14000000),
-            blurRadius: 6,
-            offset: Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            service.name,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 6),
-          Text(service.description, style: const TextStyle(color: Colors.black54)),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              const Icon(Icons.schedule, size: 18, color: Colors.black54),
-              const SizedBox(width: 6),
-              Text(service.durationText, style: const TextStyle(color: Colors.black54)),
-              const Spacer(),
-              Text(
-                "\$${service.price.toStringAsFixed(0)}",
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: brown,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(service.name,
+                style: Theme.of(context).textTheme.bodyMedium),
+            const SizedBox(height: 6),
+            Text(service.description),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                const Icon(Icons.schedule, size: 18),
+                const SizedBox(width: 6),
+                Text(service.durationText),
+                const Spacer(),
+                Text(
+                  "\$${service.price.toStringAsFixed(0)}",
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleLarge,
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton(
-              onPressed: onBook,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: brown,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(26),
-                ),
-              ),
-              child: const Text(
-                "Book Now",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ],
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: onBook,
+                child: const Text("Book Now"),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

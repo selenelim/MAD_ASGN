@@ -1,4 +1,4 @@
-import 'dart:convert'; // base64Decode
+import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:draft_asgn/AddPetScreen.dart';
@@ -10,7 +10,7 @@ import 'package:draft_asgn/ProfileScreen.dart';
 import 'package:draft_asgn/RegisterBusinessScreen.dart';
 import 'package:draft_asgn/TrainingSreen.dart';
 import 'package:draft_asgn/VetScreen.dart';
-import 'package:draft_asgn/ProviderHomeScreen.dart'; // ✅ provider dashboard (multi-shop)
+import 'package:draft_asgn/ProviderHomeScreen.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -19,16 +19,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
-  static const Color brown = Color.fromRGBO(82, 45, 11, 1);
-  static const Color lightCream = Color.fromRGBO(253, 251, 215, 1);
-
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
   String userName = '';
-  String userRole = 'user'; // user | provider
+  String userRole = 'user';
 
   @override
   void initState() {
@@ -39,14 +36,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadUserName() async {
     final user = FirebaseAuth.instance.currentUser;
-
-    if (user != null) {
-      setState(() {
-        userName = user.displayName ?? user.email?.split('@')[0] ?? 'there';
-      });
-    } else {
-      setState(() => userName = 'there');
-    }
+    setState(() {
+      userName = user?.displayName ??
+          user?.email?.split('@').first ??
+          'there';
+    });
   }
 
   Future<void> _loadUserRole() async {
@@ -55,13 +49,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final doc =
         await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-    final data = doc.data() as Map<String, dynamic>? ?? {};
+    final data = doc.data() ?? {};
 
     if (!mounted) return;
-
-    setState(() {
-      userRole = (data['role'] ?? 'user').toString(); // user/provider
-    });
+    setState(() => userRole = (data['role'] ?? 'user').toString());
   }
 
   Future<void> _logout(BuildContext context) async {
@@ -73,57 +64,41 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (_) => const LoginScreen()),
-      (route) => false,
+      (_) => false,
     );
   }
 
   Future<void> _handleMenuSelection(String value) async {
     if (value == 'profile') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const ProfileScreen()),
-      );
-      return;
-    }
-
-    if (value == 'register_business') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const RegisterBusinessScreen()),
-      );
-      return;
-    }
-
-    if (value == 'manage_shop') {
-      // ✅ Now providers manage MULTIPLE shops, no shopId needed
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const ProviderHomeScreen()),
-      );
-      return;
-    }
-
-    if (value == 'logout') {
+      Navigator.push(context,
+          MaterialPageRoute(builder: (_) => const ProfileScreen()));
+    } else if (value == 'register_business') {
+      Navigator.push(context,
+          MaterialPageRoute(builder: (_) => const RegisterBusinessScreen()));
+    } else if (value == 'manage_shop') {
+      Navigator.push(context,
+          MaterialPageRoute(builder: (_) => const ProviderHomeScreen()));
+    } else if (value == 'logout') {
       await _logout(context);
-      return;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: HomeScreen.lightCream,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildHeader(context),
+              _buildHeader(theme),
               const SizedBox(height: 24),
-              _buildPetsSection(),
+              _buildPetsSection(theme),
               const SizedBox(height: 24),
-              _buildServicesSection(),
+              _buildServicesSection(theme),
             ],
           ),
         ),
@@ -132,17 +107,17 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ================= HEADER =================
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(ThemeData theme) {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: HomeScreen.brown,
+        color: theme.colorScheme.primary,
         borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top row: logo + profile menu
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -151,103 +126,64 @@ class _HomeScreenState extends State<HomeScreen> {
                 height: 45,
               ),
               PopupMenuButton<String>(
-                icon: const CircleAvatar(
-                  backgroundColor: Colors.white,
-                  child: Icon(Icons.person, color: HomeScreen.brown),
+                icon: CircleAvatar(
+                  backgroundColor: theme.colorScheme.surface,
+                  child: Icon(Icons.person,
+                      color: theme.colorScheme.primary),
                 ),
-                offset: const Offset(0, 50),
-                color: HomeScreen.lightCream,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                itemBuilder: (context) => [
+                onSelected: _handleMenuSelection,
+                itemBuilder: (_) => [
                   const PopupMenuItem(
                     value: 'profile',
-                    child: Row(
-                      children: [
-                        Icon(Icons.account_circle, color: HomeScreen.brown),
-                        SizedBox(width: 8),
-                        Text('My Profile', style: TextStyle(color: HomeScreen.brown)),
-                      ],
-                    ),
+                    child: Text('My Profile'),
                   ),
-
-                  // ✅ Only NORMAL USERS see Register Business
-                  if (userRole == 'user') ...[
-                    const PopupMenuDivider(),
+                  if (userRole == 'user')
                     const PopupMenuItem(
                       value: 'register_business',
-                      child: Row(
-                        children: [
-                          Icon(Icons.store, color: HomeScreen.brown),
-                          SizedBox(width: 8),
-                          Text('Register Business', style: TextStyle(color: HomeScreen.brown)),
-                        ],
-                      ),
+                      child: Text('Register Business'),
                     ),
-                  ],
-
-                  // ✅ Only PROVIDERS see Manage Shops (multi-shop)
-                  if (userRole == 'provider') ...[
-                    const PopupMenuDivider(),
+                  if (userRole == 'provider')
                     const PopupMenuItem(
                       value: 'manage_shop',
-                      child: Row(
-                        children: [
-                          Icon(Icons.dashboard, color: HomeScreen.brown),
-                          SizedBox(width: 8),
-                          Text('Manage My Shops', style: TextStyle(color: HomeScreen.brown)),
-                        ],
-                      ),
+                      child: Text('Manage My Shops'),
                     ),
-                  ],
-
                   const PopupMenuDivider(),
                   const PopupMenuItem(
                     value: 'logout',
-                    child: Row(
-                      children: [
-                        Icon(Icons.logout, color: HomeScreen.brown),
-                        SizedBox(width: 8),
-                        Text('Logout', style: TextStyle(color: HomeScreen.brown)),
-                      ],
-                    ),
+                    child: Text('Logout'),
                   ),
                 ],
-                onSelected: _handleMenuSelection,
               ),
             ],
           ),
           const SizedBox(height: 24),
           Text(
             'Hello $userName 👋',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
+            style: theme.textTheme.titleLarge
+                ?.copyWith(color: theme.colorScheme.onPrimary),
           ),
           const SizedBox(height: 4),
-          const Text('Welcome back to PawPal', style: TextStyle(color: Colors.white70)),
+          Text(
+            'Welcome back to PawPal',
+            style: theme.textTheme.bodySmall
+                ?.copyWith(color: theme.colorScheme.onPrimary),
+          ),
         ],
       ),
     );
   }
 
   // ================= PETS =================
-  Widget _buildPetsSection() {
+  Widget _buildPetsSection(ThemeData theme) {
     final user = FirebaseAuth.instance.currentUser;
-
-    if (user == null) {
-      return const Text('Not logged in');
-    }
+    if (user == null) return const SizedBox();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           "$userName's Pets",
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          style: theme.textTheme.titleLarge,
         ),
         const SizedBox(height: 12),
         StreamBuilder<QuerySnapshot>(
@@ -258,130 +194,71 @@ class _HomeScreenState extends State<HomeScreen> {
               .orderBy('createdAt', descending: true)
               .snapshots(),
           builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
+            if (!snapshot.hasData) {
               return const Center(child: CircularProgressIndicator());
             }
 
-            final petWidgets = <Widget>[];
+            final pets = snapshot.data!.docs;
 
-            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-              petWidgets.add(const Text('No pets yet. Add your first pet!'));
-            } else {
-              final pets = snapshot.data!.docs;
-
-              petWidgets.addAll(
-                pets.map((pet) {
-                  final petData = pet.data() as Map<String, dynamic>;
-                  final petId = pet.id;
-
-                  ImageProvider? petImageProvider;
-                  final b64 = petData['profilePicBase64'];
-                  if (b64 is String && b64.isNotEmpty) {
-                    try {
-                      petImageProvider = MemoryImage(base64Decode(b64));
-                    } catch (_) {
-                      petImageProvider = null;
-                    }
-                  }
-
-                  return GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => PetProfileScreen(
-                            userId: user.uid,
-                            petId: petId,
-                          ),
-                        ),
-                      );
-                    },
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Colors.black12,
-                            blurRadius: 4,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 80,
-                            height: 80,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              color: Colors.grey[300],
-                              image: petImageProvider != null
-                                  ? DecorationImage(
-                                      image: petImageProvider,
-                                      fit: BoxFit.cover,
-                                    )
-                                  : null,
-                            ),
-                            child: petImageProvider == null
-                                ? const Icon(Icons.pets, color: Colors.white)
-                                : null,
-                          ),
-                          const SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                (petData['name'] ?? 'Unnamed Pet').toString(),
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              Text(
-                                (petData['species'] ?? 'Unknown Species').toString(),
-                                style: const TextStyle(color: Colors.grey),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }),
+            if (pets.isEmpty) {
+              return Text(
+                'No pets yet. Add your first pet!',
+                style: theme.textTheme.bodyMedium,
               );
             }
 
-            petWidgets.add(const SizedBox(height: 16));
-            petWidgets.add(
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const AddPetScreen()),
-                    );
-                  },
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add Pet'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: HomeScreen.brown,
-                    foregroundColor: HomeScreen.lightCream,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
+            return Column(
+              children: [
+                ...pets.map((pet) {
+                  final petData = pet.data() as Map<String, dynamic>;
+                  ImageProvider? img;
+
+                  if (petData['profilePicBase64'] != null) {
+                    try {
+                      img = MemoryImage(
+                          base64Decode(petData['profilePicBase64']));
+                    } catch (_) {}
+                  }
+
+                  return Card(
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundImage: img,
+                        child: img == null ? const Icon(Icons.pets) : null,
+                      ),
+                      title: Text(petData['name'] ?? 'Unnamed'),
+                      subtitle:
+                          Text(petData['species'] ?? 'Unknown species'),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => PetProfileScreen(
+                              userId: user.uid,
+                              petId: pet.id,
+                            ),
+                          ),
+                        );
+                      },
                     ),
+                  );
+                }),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const AddPetScreen()),
+                      );
+                    },
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add Pet'),
                   ),
                 ),
-              ),
-            );
-
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: petWidgets,
+              ],
             );
           },
         ),
@@ -390,11 +267,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ================= SERVICES =================
-  Widget _buildServicesSection() {
+  Widget _buildServicesSection(ThemeData theme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Services', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        Text('Services', style: theme.textTheme.titleLarge),
         const SizedBox(height: 12),
         GridView.count(
           crossAxisCount: 2,
@@ -403,46 +280,22 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
           children: [
-            _ServiceCard(
-              icon: Icons.cut,
-              label: 'Grooming',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const GroomingScreen()),
-                );
-              },
-            ),
-            _ServiceCard(
-              icon: Icons.medical_services,
-              label: 'Vet',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const VetScreen()),
-                );
-              },
-            ),
-            _ServiceCard(
-              icon: Icons.home,
-              label: 'Boarding',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const BoardingScreen()),
-                );
-              },
-            ),
-            _ServiceCard(
-              icon: Icons.school,
-              label: 'Training',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const TrainingScreen()),
-                );
-              },
-            ),
+            _ServiceCard(icon: Icons.cut, label: 'Grooming', onTap: () {
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const GroomingScreen()));
+            }),
+            _ServiceCard(icon: Icons.medical_services, label: 'Vet', onTap: () {
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const VetScreen()));
+            }),
+            _ServiceCard(icon: Icons.home, label: 'Boarding', onTap: () {
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const BoardingScreen()));
+            }),
+            _ServiceCard(icon: Icons.school, label: 'Training', onTap: () {
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const TrainingScreen()));
+            }),
           ],
         ),
       ],
@@ -462,13 +315,11 @@ class _ServiceCard extends StatelessWidget {
     required this.onTap,
   });
 
-  static const Color brown = Color(0xFF522D0B);
-
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(20),
+    final theme = Theme.of(context);
+
+    return Card(
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
         onTap: onTap,
@@ -480,13 +331,13 @@ class _ServiceCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: brown,
+                  color: theme.colorScheme.primary,
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: Icon(icon, color: Colors.white),
+                child: Icon(icon, color: theme.colorScheme.onPrimary),
               ),
               const SizedBox(height: 8),
-              Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(label, style: theme.textTheme.bodyMedium),
             ],
           ),
         ),

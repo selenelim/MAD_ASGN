@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:draft_asgn/HomeScreen.dart';
 
 class RegisterBusinessScreen extends StatefulWidget {
   const RegisterBusinessScreen({super.key});
@@ -11,9 +10,6 @@ class RegisterBusinessScreen extends StatefulWidget {
 }
 
 class _RegisterBusinessScreenState extends State<RegisterBusinessScreen> {
-  static const Color brown = HomeScreen.brown;
-  static const Color lightCream = HomeScreen.lightCream;
-
   final _formKey = GlobalKey<FormState>();
 
   final businessCtrl = TextEditingController();
@@ -30,26 +26,11 @@ class _RegisterBusinessScreenState extends State<RegisterBusinessScreen> {
     super.dispose();
   }
 
+  
   InputDecoration _input(String label, {String? hint}) {
     return InputDecoration(
       labelText: label,
       hintText: hint,
-      labelStyle: const TextStyle(color: brown, fontWeight: FontWeight.w600),
-      floatingLabelStyle: const TextStyle(color: brown, fontWeight: FontWeight.w700),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: brown.withOpacity(0.35), width: 1.4),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: brown, width: 2.2),
-      ),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      filled: true,
-      fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
     );
   }
 
@@ -62,7 +43,6 @@ class _RegisterBusinessScreenState extends State<RegisterBusinessScreen> {
     setState(() => submitting = true);
 
     try {
-      // One application per user (overwrite if re-submitted)
       final appRef = FirebaseFirestore.instance
           .collection('providerApplications')
           .doc(user.uid);
@@ -73,14 +53,11 @@ class _RegisterBusinessScreenState extends State<RegisterBusinessScreen> {
         'businessName': businessCtrl.text.trim(),
         'phone': phoneCtrl.text.trim(),
         'note': noteCtrl.text.trim(),
-
-        // workflow
-        'status': 'pending', // pending | approved | rejected
+        'status': 'pending',
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
-      // Mark user as having applied (still NOT provider yet)
       await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
         'role': 'user',
         'providerApplied': true,
@@ -107,46 +84,49 @@ class _RegisterBusinessScreenState extends State<RegisterBusinessScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: lightCream,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+
+     
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: Colors.black,
         centerTitle: true,
-        title: const Text(
-          "Register Business",
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Image.asset(
+          'assets/img/pawpal_logo.png',
+          height: 65,
         ),
       ),
+
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
           child: ListView(
             children: [
-              // ===== Top header card =====
+              // ===== HEADER CARD  =====
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: brown,
+                  color: Theme.of(context).appBarTheme.backgroundColor, 
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Column(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       "Become a Provider",
-                      style: TextStyle(
-                        color: lightCream,
-                        fontSize: 20,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: Theme.of(context).scaffoldBackgroundColor, 
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     Text(
                       "Submit your business details for admin approval.",
-                      style: TextStyle(color: lightCream),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).scaffoldBackgroundColor, 
+                      ),
                     ),
                   ],
                 ),
@@ -175,7 +155,8 @@ class _RegisterBusinessScreenState extends State<RegisterBusinessScreen> {
                 maxLines: 4,
                 decoration: _input(
                   "Proof of legitimacy (optional)",
-                  hint: "e.g. UEN, website, Instagram, licence, years in business",
+                  hint:
+                      "e.g. UEN, website, Instagram, licence, years in business",
                 ),
               ),
               const SizedBox(height: 20),
@@ -183,13 +164,6 @@ class _RegisterBusinessScreenState extends State<RegisterBusinessScreen> {
               SizedBox(
                 height: 52,
                 child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: brown,
-                    foregroundColor: lightCream,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(26),
-                    ),
-                  ),
                   onPressed: submitting ? null : _submit,
                   child: submitting
                       ? const SizedBox(
@@ -197,12 +171,11 @@ class _RegisterBusinessScreenState extends State<RegisterBusinessScreen> {
                           height: 22,
                           child: CircularProgressIndicator(
                             strokeWidth: 2.5,
-                            color: lightCream,
                           ),
                         )
                       : const Text(
                           "Submit Application",
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                         
                         ),
                 ),
               ),

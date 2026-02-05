@@ -1,13 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:draft_asgn/HomeScreen.dart';
 
 class ProviderEditShopScreen extends StatefulWidget {
   final String shopId;
   const ProviderEditShopScreen({super.key, required this.shopId});
 
   @override
-  State<ProviderEditShopScreen> createState() => _ProviderEditShopScreenState();
+  State<ProviderEditShopScreen> createState() =>
+      _ProviderEditShopScreenState();
 }
 
 class _ProviderEditShopScreenState extends State<ProviderEditShopScreen> {
@@ -22,9 +22,6 @@ class _ProviderEditShopScreenState extends State<ProviderEditShopScreen> {
 
   bool isPublished = true;
   bool loading = true;
-
-  static const Color brown = HomeScreen.brown;
-  static const Color lightCream = HomeScreen.lightCream;
 
   @override
   void initState() {
@@ -43,26 +40,12 @@ class _ProviderEditShopScreenState extends State<ProviderEditShopScreen> {
     super.dispose();
   }
 
+  // ✅ Input decoration now RELIES on theme
   InputDecoration _input(String label, {String? hint}) {
     return InputDecoration(
       labelText: label,
       hintText: hint,
-      labelStyle: const TextStyle(color: brown, fontWeight: FontWeight.w600),
-      floatingLabelStyle: const TextStyle(color: brown, fontWeight: FontWeight.w700),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: brown.withOpacity(0.35), width: 1.4),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: brown, width: 2.2),
-      ),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      filled: true,
-      fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      filled: true, // fillColor comes from theme
     );
   }
 
@@ -84,7 +67,6 @@ class _ProviderEditShopScreenState extends State<ProviderEditShopScreen> {
       phoneCtrl.text = (d['phone'] ?? '').toString();
       addressCtrl.text = (d['address'] ?? '').toString();
       isPublished = (d['isPublished'] ?? true) == true;
-
       mapsUrlCtrl.text = (d['mapsUrl'] ?? '').toString();
 
       final loc = d['location'];
@@ -112,7 +94,10 @@ class _ProviderEditShopScreenState extends State<ProviderEditShopScreen> {
     }
 
     try {
-      await FirebaseFirestore.instance.collection('shops').doc(widget.shopId).update({
+      await FirebaseFirestore.instance
+          .collection('shops')
+          .doc(widget.shopId)
+          .update({
         'name': nameCtrl.text.trim(),
         'phone': phoneCtrl.text.trim(),
         'address': addressCtrl.text.trim(),
@@ -126,7 +111,7 @@ class _ProviderEditShopScreenState extends State<ProviderEditShopScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Saved ✅")),
       );
-      Navigator.pop(context); // optional: go back after save
+      Navigator.pop(context);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error: $e")),
@@ -136,12 +121,15 @@ class _ProviderEditShopScreenState extends State<ProviderEditShopScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
+    final cream = theme.scaffoldBackgroundColor;
+
     return Scaffold(
-      backgroundColor: lightCream,
+      backgroundColor: cream,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: Colors.black,
         centerTitle: true,
         title: Image.asset('assets/img/pawpal_logo.png', height: 65),
       ),
@@ -153,33 +141,35 @@ class _ProviderEditShopScreenState extends State<ProviderEditShopScreen> {
                 key: _formKey,
                 child: ListView(
                   children: [
-                    // ===== Top header card =====
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: brown,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Edit Shop Details",
-                            style: TextStyle(
-                              color: lightCream,
-                              fontSize: 20,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            "Update your shop info and save changes.",
-                            style: TextStyle(color: lightCream),
-                          ),
-                        ],
-                      ),
-                    ),
+                    // ===== HEADER CARD =====
+                   Container(
+  width: double.infinity,
+  padding: const EdgeInsets.all(16),
+  decoration: BoxDecoration(
+    color: Theme.of(context).appBarTheme.backgroundColor, // ✅ brown from theme
+    borderRadius: BorderRadius.circular(20),
+  ),
+  child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        "Edit Shop Details",
+        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+          color: Theme.of(context).scaffoldBackgroundColor, // ✅ cream
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+      const SizedBox(height: 8),
+      Text(
+        "Update your shop info and save changes.",
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: Theme.of(context).scaffoldBackgroundColor, // ✅ cream
+        ),
+      ),
+    ],
+  ),
+),
+
 
                     const SizedBox(height: 16),
 
@@ -207,11 +197,13 @@ class _ProviderEditShopScreenState extends State<ProviderEditShopScreen> {
                     ),
 
                     const SizedBox(height: 18),
-                    const Text(
+                    Text(
                       "Google Maps Link (for Directions)",
-                      style: TextStyle(fontWeight: FontWeight.bold, color: brown),
+                      style: theme.textTheme.titleSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
+
                     TextFormField(
                       controller: mapsUrlCtrl,
                       decoration: _input(
@@ -221,9 +213,10 @@ class _ProviderEditShopScreenState extends State<ProviderEditShopScreen> {
                     ),
 
                     const SizedBox(height: 18),
-                    const Text(
+                    Text(
                       "Location (for distance calculation)",
-                      style: TextStyle(fontWeight: FontWeight.bold, color: brown),
+                      style: theme.textTheme.titleSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
 
@@ -251,29 +244,21 @@ class _ProviderEditShopScreenState extends State<ProviderEditShopScreen> {
                       contentPadding: EdgeInsets.zero,
                       title: const Text(
                         "Published",
-                        style: TextStyle(fontWeight: FontWeight.bold, color: brown),
+                        style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       value: isPublished,
-                      activeColor: brown,
                       onChanged: (v) => setState(() => isPublished = v),
                     ),
 
                     const SizedBox(height: 16),
                     SizedBox(
                       height: 52,
-                      width: double.infinity,
                       child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: brown,
-                          foregroundColor: lightCream,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(26),
-                          ),
-                        ),
                         onPressed: _save,
                         child: const Text(
                           "Save",
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 16),
                         ),
                       ),
                     ),
@@ -284,3 +269,4 @@ class _ProviderEditShopScreenState extends State<ProviderEditShopScreen> {
     );
   }
 }
+

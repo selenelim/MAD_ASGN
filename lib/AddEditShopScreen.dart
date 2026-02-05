@@ -11,15 +11,12 @@ class AddEditShopScreen extends StatefulWidget {
 }
 
 class _AddEditShopScreenState extends State<AddEditShopScreen> {
-  static const Color brown = Color.fromRGBO(82, 45, 11, 1);
-  static const Color lightCream = Color.fromRGBO(253, 251, 215, 1);
-
   final _formKey = GlobalKey<FormState>();
   final _name = TextEditingController();
   final _address = TextEditingController();
+
   String _category = 'grooming';
   bool _isPublished = true;
-
   bool _loading = false;
 
   @override
@@ -32,17 +29,23 @@ class _AddEditShopScreenState extends State<AddEditShopScreen> {
 
   Future<void> _loadShop() async {
     setState(() => _loading = true);
-    final doc = await FirebaseFirestore.instance.collection('shops').doc(widget.shopId).get();
+    final doc = await FirebaseFirestore.instance
+        .collection('shops')
+        .doc(widget.shopId)
+        .get();
+
     final data = doc.data() ?? {};
     _name.text = (data['name'] ?? '').toString();
     _address.text = (data['address'] ?? '').toString();
     _category = (data['category'] ?? 'grooming').toString();
     _isPublished = (data['isPublished'] ?? true) == true;
+
     setState(() => _loading = false);
   }
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
@@ -72,12 +75,15 @@ class _AddEditShopScreenState extends State<AddEditShopScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: lightCream,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: brown,
-        foregroundColor: Colors.white,
-        title: Text(widget.shopId == null ? "Add Shop" : "Edit Shop"),
+        title: Text(
+          widget.shopId == null ? "Add Shop" : "Edit Shop",
+          style: theme.textTheme.titleLarge,
+        ),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -89,39 +95,72 @@ class _AddEditShopScreenState extends State<AddEditShopScreen> {
                   children: [
                     TextFormField(
                       controller: _name,
-                      decoration: const InputDecoration(labelText: "Shop name"),
-                      validator: (v) => (v == null || v.trim().isEmpty) ? "Required" : null,
+                      decoration: const InputDecoration(
+                        labelText: "Shop name",
+                      ),
+                      validator: (v) =>
+                          (v == null || v.trim().isEmpty) ? "Required" : null,
                     ),
                     const SizedBox(height: 12),
+
                     TextFormField(
                       controller: _address,
-                      decoration: const InputDecoration(labelText: "Address"),
+                      decoration: const InputDecoration(
+                        labelText: "Address",
+                      ),
                     ),
                     const SizedBox(height: 12),
+
                     DropdownButtonFormField<String>(
                       value: _category,
+                      decoration: const InputDecoration(
+                        labelText: "Category",
+                      ),
                       items: const [
-                        DropdownMenuItem(value: 'grooming', child: Text("Grooming")),
-                        DropdownMenuItem(value: 'vet', child: Text("Vet")),
-                        DropdownMenuItem(value: 'training', child: Text("Training")),
-                        DropdownMenuItem(value: 'boarding', child: Text("Boarding")),
+                        DropdownMenuItem(
+                          value: 'grooming',
+                          child: Text("Grooming"),
+                        ),
+                        DropdownMenuItem(
+                          value: 'vet',
+                          child: Text("Vet"),
+                        ),
+                        DropdownMenuItem(
+                          value: 'training',
+                          child: Text("Training"),
+                        ),
+                        DropdownMenuItem(
+                          value: 'boarding',
+                          child: Text("Boarding"),
+                        ),
                       ],
-                      onChanged: (v) => setState(() => _category = v ?? 'grooming'),
-                      decoration: const InputDecoration(labelText: "Category"),
+                      onChanged: (v) =>
+                          setState(() => _category = v ?? 'grooming'),
                     ),
                     const SizedBox(height: 12),
+
                     SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
                       value: _isPublished,
-                      onChanged: (v) => setState(() => _isPublished = v),
-                      title: const Text("Published (visible to users)"),
+                      onChanged: (v) =>
+                          setState(() => _isPublished = v),
+                      activeColor: theme.colorScheme.primary,
+                      title: Text(
+                        "Published (visible to users)",
+                        style: theme.textTheme.bodyMedium,
+                      ),
                     ),
                     const SizedBox(height: 18),
+
                     SizedBox(
                       height: 48,
+                      width: double.infinity,
                       child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(backgroundColor: brown),
                         onPressed: _save,
-                        child: Text(_loading ? "Saving..." : "Save"),
+                        child: Text(
+                          _loading ? "Saving..." : "Save",
+                          style: theme.textTheme.bodyMedium
+                        ),
                       ),
                     ),
                   ],
@@ -131,3 +170,4 @@ class _AddEditShopScreenState extends State<AddEditShopScreen> {
     );
   }
 }
+

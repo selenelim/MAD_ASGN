@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 class AddPetScreen extends StatefulWidget {
-  final String? petId; // if not null -> edit mode
+  final String? petId;
   final Map<String, dynamic>? existingPetData;
 
   const AddPetScreen({
@@ -35,11 +35,7 @@ class _AddPetScreenState extends State<AddPetScreen> {
   bool isLoading = false;
 
   final ImagePicker _picker = ImagePicker();
-
-  // New image picked this session
   File? petImage;
-
-  // Existing Base64 (for edit mode preview + keeping old photo)
   String? existingBase64;
 
   bool get isEditMode => widget.petId != null;
@@ -76,18 +72,14 @@ class _AddPetScreenState extends State<AddPetScreen> {
   Future<void> _pickImage() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
-      setState(() {
-        petImage = File(image.path);
-        // if user picks a new image, we can still keep existingBase64,
-        // but the UI will show the new File image
-      });
+      setState(() => petImage = File(image.path));
     }
   }
 
   void _removePhoto() {
     setState(() {
       petImage = null;
-      existingBase64 = null; // removes existing photo too
+      existingBase64 = null;
     });
   }
 
@@ -106,17 +98,12 @@ class _AddPetScreenState extends State<AddPetScreen> {
 
     setState(() => isLoading = true);
 
-    // Determine which image string to save:
-    // - if user picked a new image -> encode it
-    // - else if edit mode and existingBase64 still exists -> keep it
-    // - else -> null
     String? imageBase64ToSave;
-
     if (petImage != null) {
       final bytes = await petImage!.readAsBytes();
       imageBase64ToSave = base64Encode(bytes);
     } else {
-      imageBase64ToSave = existingBase64; // may be null (if removed)
+      imageBase64ToSave = existingBase64;
     }
 
     final petsCol = FirebaseFirestore.instance
@@ -138,22 +125,14 @@ class _AddPetScreenState extends State<AddPetScreen> {
       if (isEditMode) {
         await petsCol.doc(widget.petId!).update(payload);
       } else {
-        await petsCol.add({
-          ...payload,
-          'createdAt': Timestamp.now(),
-        });
+        await petsCol.add({...payload, 'createdAt': Timestamp.now()});
       }
 
-     if (context.mounted) {
-  Navigator.pop(context);
-}
-
-
+      if (context.mounted) Navigator.pop(context);
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save pet: $e')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Failed to save pet: $e')));
       }
     } finally {
       if (context.mounted) setState(() => isLoading = false);
@@ -174,7 +153,9 @@ class _AddPetScreenState extends State<AddPetScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF522D0B) : Colors.white,
+            color: isSelected
+                ? Theme.of(context).colorScheme.primary
+                : Colors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: Colors.black12),
           ),
@@ -182,7 +163,9 @@ class _AddPetScreenState extends State<AddPetScreen> {
             child: Text(
               label,
               style: TextStyle(
-                color: isSelected ? Colors.white : Colors.black,
+                color: isSelected
+                    ? Theme.of(context).colorScheme.onPrimary
+                    : Colors.black,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -195,7 +178,8 @@ class _AddPetScreenState extends State<AddPetScreen> {
   Widget _label(String text) {
     return Padding(
       padding: const EdgeInsets.only(top: 16, bottom: 8),
-      child: Text(text, style: const TextStyle(fontWeight: FontWeight.bold)),
+      child: Text(text,
+          style: const TextStyle(fontWeight: FontWeight.bold)),
     );
   }
 
@@ -227,15 +211,12 @@ class _AddPetScreenState extends State<AddPetScreen> {
   Widget build(BuildContext context) {
     ImageProvider? previewImage;
 
-    // Priority: newly picked image > existing base64
     if (petImage != null) {
       previewImage = FileImage(petImage!);
     } else if (existingBase64 != null) {
       try {
         previewImage = MemoryImage(base64Decode(existingBase64!));
-      } catch (_) {
-        previewImage = null;
-      }
+      } catch (_) {}
     }
 
     return Scaffold(
@@ -246,7 +227,7 @@ class _AddPetScreenState extends State<AddPetScreen> {
         centerTitle: true,
         title: Image.asset('assets/img/pawpal_logo.png', height: 65),
       ),
-      backgroundColor: const Color(0xFFFDFBD7),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -254,11 +235,10 @@ class _AddPetScreenState extends State<AddPetScreen> {
           children: [
             Text(
               isEditMode ? 'Edit your pet 🐾' : 'Tell us about your pet 🐾',
-              style: const TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.w900,
-                color: HomeScreen.brown,
-              ),
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w900,
+                  ),
             ),
             const SizedBox(height: 4),
             Text(
@@ -274,6 +254,9 @@ class _AddPetScreenState extends State<AddPetScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // 🔒 EVERYTHING BELOW UNCHANGED STRUCTURALLY
+                  // (buttons, fields, layout all intact)
+
                   // Photo section
                   Center(
                     child: Column(
@@ -345,10 +328,8 @@ class _AddPetScreenState extends State<AddPetScreen> {
                   ),
 
                   _label('Breed (optional)'),
-                  _textField(
-                    breedController,
-                    'e.g. Golden Retriever, British Shorthair',
-                  ),
+                  _textField(breedController,
+                      'e.g. Golden Retriever, British Shorthair'),
 
                   _label('Size *'),
                   Row(
@@ -380,11 +361,8 @@ class _AddPetScreenState extends State<AddPetScreen> {
                   _textField(ageController, 'e.g. 2 years', required: true),
 
                   _label('Notes (optional)'),
-                  _textField(
-                    notesController,
-                    'Any allergies or temperament...',
-                    maxLines: 3,
-                  ),
+                  _textField(notesController,
+                      'Any allergies or temperament...', maxLines: 3),
 
                   const SizedBox(height: 30),
 
@@ -393,9 +371,12 @@ class _AddPetScreenState extends State<AddPetScreen> {
                     child: ElevatedButton(
                       onPressed: isLoading ? null : _savePet,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF522D0B),
-                        foregroundColor: HomeScreen.lightCream,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        backgroundColor:
+                            Theme.of(context).colorScheme.primary,
+                        foregroundColor:
+                            Theme.of(context).colorScheme.onPrimary,
+                        padding:
+                            const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(30),
                         ),
@@ -421,3 +402,4 @@ class _AddPetScreenState extends State<AddPetScreen> {
     );
   }
 }
+

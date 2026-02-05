@@ -11,13 +11,17 @@ class MyAppointmentsScreen extends StatelessWidget {
     final user = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
-      backgroundColor: HomeScreen.lightCream,
+      
       appBar: AppBar(
-        backgroundColor: HomeScreen.brown,
         title: const Text('My Appointments'),
       ),
       body: user == null
-          ? const Center(child: Text('Please log in'))
+          ? Center(
+              child: Text(
+                'Please log in',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            )
           : StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('users')
@@ -31,15 +35,16 @@ class MyAppointmentsScreen extends StatelessWidget {
                 }
 
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(
+                  return Center(
                     child: Text(
                       'No appointments yet 🐾',
-                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodyMedium
+                          ,
                     ),
                   );
                 }
-
-                final now = DateTime.now();
 
                 final upcoming = snapshot.data!.docs.where((doc) {
                   final data = doc.data() as Map<String, dynamic>;
@@ -60,25 +65,23 @@ class MyAppointmentsScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(16),
                   children: [
                     if (upcoming.isNotEmpty) ...[
-                      _sectionTitle('Upcoming Appointments'),
+                      _sectionTitle(context, 'Upcoming Appointments'),
                       ...upcoming.map(
                         (doc) =>
                             _appointmentCard(context, doc, showCancel: true),
                       ),
                     ],
-
                     if (cancelled.isNotEmpty) ...[
                       const SizedBox(height: 24),
-                      _sectionTitle('Cancelled Appointments'),
+                      _sectionTitle(context, 'Cancelled Appointments'),
                       ...cancelled.map(
                         (doc) =>
                             _appointmentCard(context, doc, showCancel: false),
                       ),
                     ],
-
                     if (past.isNotEmpty) ...[
                       const SizedBox(height: 24),
-                      _sectionTitle('Past Appointments'),
+                      _sectionTitle(context, 'Past Appointments'),
                       ...past.map(
                         (doc) =>
                             _appointmentCard(context, doc, showCancel: false),
@@ -93,12 +96,12 @@ class MyAppointmentsScreen extends StatelessWidget {
 
   // ---------------- UI HELPERS ----------------
 
-  static Widget _sectionTitle(String title) {
+  static Widget _sectionTitle(BuildContext context, String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Text(
         title,
-        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        style: Theme.of(context).textTheme.titleLarge,
       ),
     );
   }
@@ -115,31 +118,50 @@ class MyAppointmentsScreen extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        color: Theme.of(context).cardTheme.color,
+        borderRadius:
+            (Theme.of(context).cardTheme.shape as RoundedRectangleBorder?)
+                    ?.borderRadius ??
+                BorderRadius.circular(20),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             data['serviceName'] ?? '',
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
           ),
           const SizedBox(height: 4),
           Text(
             data['storeName'] ?? '',
-            style: const TextStyle(color: Colors.grey),
+            style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 10),
           Row(
             children: [
-              const Icon(Icons.calendar_today, size: 16),
+              Icon(
+                Icons.calendar_today,
+                size: 16,
+                color: Theme.of(context).iconTheme.color,
+              ),
               const SizedBox(width: 6),
-              Text('${date.day}/${date.month}/${date.year}'),
+              Text(
+                '${date.day}/${date.month}/${date.year}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
               const SizedBox(width: 12),
-              const Icon(Icons.access_time, size: 16),
+              Icon(
+                Icons.access_time,
+                size: 16,
+                color: Theme.of(context).iconTheme.color,
+              ),
               const SizedBox(width: 6),
-              Text(data['time'] ?? ''),
+              Text(
+                data['time'] ?? '',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
             ],
           ),
           if (showCancel) ...[
@@ -173,15 +195,12 @@ class MyAppointmentsScreen extends StatelessWidget {
         '${data['storeName']}_${(data['date'] as Timestamp).toDate().toIso8601String().split('T')[0]}_${data['time']}';
 
     try {
-      // 1️⃣ Update user booking status
       await doc.reference.update({'status': 'cancelled'});
-
-      // 2️⃣ Remove global booking (free slot)
       await firestore.collection('bookings').doc(bookingId).delete();
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Appointment cancelled')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Appointment cancelled')),
+      );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to cancel appointment')),
@@ -189,3 +208,4 @@ class MyAppointmentsScreen extends StatelessWidget {
     }
   }
 }
+

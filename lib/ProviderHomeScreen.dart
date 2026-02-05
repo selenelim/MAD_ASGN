@@ -11,9 +11,6 @@ import 'ProviderEditShopScreen.dart';
 class ProviderHomeScreen extends StatelessWidget {
   const ProviderHomeScreen({super.key});
 
-  static const Color brown = Color.fromRGBO(82, 45, 11, 1);
-  static const Color lightCream = Color.fromRGBO(253, 251, 215, 1);
-
   Future<void> _logout(BuildContext context) async {
     await FirebaseAuth.instance.signOut();
     final prefs = await SharedPreferences.getInstance();
@@ -32,19 +29,14 @@ class ProviderHomeScreen extends StatelessWidget {
     final res = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: lightCream,
-        title: Text(title, style: const TextStyle(color: brown)),
+        title: Text(title, style: Theme.of(context).textTheme.titleLarge),
         content: Text(msg),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancel", style: TextStyle(color: brown)),
+            child: const Text("Cancel"),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: brown,
-              foregroundColor: lightCream,
-            ),
             onPressed: () => Navigator.pop(context, true),
             child: const Text("OK"),
           ),
@@ -67,8 +59,9 @@ class ProviderHomeScreen extends StatelessWidget {
         .snapshots();
 
     final userEmail = user.email ?? 'provider';
-    final shortName =
-        userEmail.contains('@') ? userEmail.split('@').first : userEmail;
+    final shortName = userEmail.contains('@')
+        ? userEmail.split('@').first
+        : userEmail;
 
     return Scaffold(
       appBar: AppBar(
@@ -78,7 +71,7 @@ class ProviderHomeScreen extends StatelessWidget {
         title: Image.asset('assets/img/pawpal_logo.png', height: 65),
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout, color: brown),
+            icon:  Icon(Icons.logout,color: Color.fromRGBO(82, 45, 11, 1), ),
             onPressed: () async {
               final ok = await _confirm(
                 context,
@@ -92,7 +85,7 @@ class ProviderHomeScreen extends StatelessWidget {
           ),
         ],
       ),
-      backgroundColor: lightCream,
+
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(16),
@@ -101,27 +94,23 @@ class ProviderHomeScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: brown,
+                color: Theme.of(context).appBarTheme.backgroundColor,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     "Provider Home",
-                    style: TextStyle(
-                      color: lightCream,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).scaffoldBackgroundColor,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     "Hello $shortName 👋",
-                    style: const TextStyle(
-                      color: lightCream,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: Theme.of(context).scaffoldBackgroundColor,
                     ),
                   ),
                 ],
@@ -130,10 +119,7 @@ class ProviderHomeScreen extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            const Text(
-              "Your shops",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
+            Text("Your shops", style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 12),
 
             // ===== SHOPS LIST =====
@@ -170,7 +156,8 @@ class ProviderHomeScreen extends StatelessWidget {
                             title: Text(
                               name,
                               style: const TextStyle(
-                                  fontWeight: FontWeight.bold),
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             subtitle: Text(data['category'] ?? ''),
                             onTap: () {
@@ -188,9 +175,9 @@ class ProviderHomeScreen extends StatelessWidget {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (_) =>
-                                          ProviderEditShopScreen(
-                                              shopId: shopId),
+                                      builder: (_) => ProviderEditShopScreen(
+                                        shopId: shopId,
+                                      ),
                                     ),
                                   );
                                 } else if (v == "delete") {
@@ -209,10 +196,13 @@ class ProviderHomeScreen extends StatelessWidget {
                               },
                               itemBuilder: (_) => const [
                                 PopupMenuItem(
-                                    value: "edit", child: Text("Edit Shop")),
+                                  value: "edit",
+                                  child: Text("Edit Shop"),
+                                ),
                                 PopupMenuItem(
-                                    value: "delete",
-                                    child: Text("Delete Shop")),
+                                  value: "delete",
+                                  child: Text("Delete Shop"),
+                                ),
                               ],
                             ),
                           ),
@@ -225,30 +215,27 @@ class ProviderHomeScreen extends StatelessWidget {
                               .doc(shopId)
                               .collection('appointments')
                               .where('status', isEqualTo: 'upcoming')
-                              .snapshots(), // 🔥 ORDER BY REMOVED
+                              .snapshots(), //
                           builder: (context, snap) {
-                            if (!snap.hasData ||
-                                snap.data!.docs.isEmpty) {
+                            if (!snap.hasData || snap.data!.docs.isEmpty) {
                               return const SizedBox();
                             }
 
                             return Padding(
-                              padding:
-                                  const EdgeInsets.fromLTRB(24, 6, 0, 16),
+                              padding: EdgeInsets.fromLTRB(24, 6, 0, 16),
                               child: Column(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.stretch,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
-                                  const Padding(
-                                    padding:
-                                        EdgeInsets.only(left: 4, bottom: 8),
+                                  Padding(
+                                    padding: EdgeInsets.only(
+                                      left: 4,
+                                      bottom: 8,
+                                    ),
                                     child: Text(
                                       "Upcoming Appointments",
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w700,
-                                        color: Colors.black54,
-                                      ),
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodyMedium,
                                     ),
                                   ),
 
@@ -257,16 +244,14 @@ class ProviderHomeScreen extends StatelessWidget {
                                         doc.data() as Map<String, dynamic>;
 
                                     return Container(
-                                      margin:
-                                          const EdgeInsets.only(bottom: 10),
-                                      padding:
-                                          const EdgeInsets.all(14),
+                                      margin: const EdgeInsets.only(bottom: 10),
+                                      padding: const EdgeInsets.all(14),
                                       decoration: BoxDecoration(
                                         color: Colors.white,
-                                        borderRadius:
-                                            BorderRadius.circular(16),
+                                        borderRadius: BorderRadius.circular(16),
                                         border: Border.all(
-                                            color: Colors.black12),
+                                          color: Colors.black12,
+                                        ),
                                       ),
                                       child: Column(
                                         crossAxisAlignment:
@@ -283,18 +268,19 @@ class ProviderHomeScreen extends StatelessWidget {
                                           Text(
                                             "Pet: ${a['pet']['name']}",
                                             style: const TextStyle(
-                                                color: Colors.black54),
+                                              color: Colors.black54,
+                                            ),
                                           ),
                                           Text(
                                             "Time: ${a['time']}",
                                             style: const TextStyle(
-                                                color: Colors.black54),
+                                              color: Colors.black54,
+                                            ),
                                           ),
                                           const SizedBox(height: 8),
 
                                           Align(
-                                            alignment:
-                                                Alignment.centerRight,
+                                            alignment: Alignment.centerRight,
                                             child: TextButton(
                                               onPressed: () async {
                                                 final ok = await _confirm(
@@ -304,8 +290,7 @@ class ProviderHomeScreen extends StatelessWidget {
                                                 );
                                                 if (!ok) return;
 
-                                                final clientUid =
-                                                    a['userId'];
+                                                final clientUid = a['userId'];
                                                 final bookingId = doc.id;
 
                                                 final firestore =
@@ -314,12 +299,11 @@ class ProviderHomeScreen extends StatelessWidget {
                                                 await firestore
                                                     .collection('shops')
                                                     .doc(shopId)
-                                                    .collection(
-                                                        'appointments')
+                                                    .collection('appointments')
                                                     .doc(bookingId)
                                                     .update({
-                                                  'status': 'cancelled'
-                                                });
+                                                      'status': 'cancelled',
+                                                    });
 
                                                 await firestore
                                                     .collection('users')
@@ -327,8 +311,8 @@ class ProviderHomeScreen extends StatelessWidget {
                                                     .collection('bookings')
                                                     .doc(bookingId)
                                                     .update({
-                                                  'status': 'cancelled'
-                                                });
+                                                      'status': 'cancelled',
+                                                    });
 
                                                 await firestore
                                                     .collection('bookings')
@@ -338,7 +322,8 @@ class ProviderHomeScreen extends StatelessWidget {
                                               child: const Text(
                                                 "Cancel",
                                                 style: TextStyle(
-                                                    color: Colors.red),
+                                                  color: Colors.red,
+                                                ),
                                               ),
                                             ),
                                           ),
@@ -362,13 +347,13 @@ class ProviderHomeScreen extends StatelessWidget {
       ),
 
       floatingActionButton: FloatingActionButton(
-        backgroundColor: brown,
+         backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+  foregroundColor: Theme.of(context).scaffoldBackgroundColor,
+       
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (_) => const ProviderAddShopScreen(),
-            ),
+            MaterialPageRoute(builder: (_) => const ProviderAddShopScreen()),
           );
         },
         child: const Icon(Icons.add),
