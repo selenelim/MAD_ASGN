@@ -16,7 +16,6 @@ class ProviderHomeScreen extends StatelessWidget {
 
   Future<void> _logout(BuildContext context) async {
     await FirebaseAuth.instance.signOut();
-
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('rememberMe', false);
 
@@ -35,7 +34,7 @@ class ProviderHomeScreen extends StatelessWidget {
       builder: (_) => AlertDialog(
         backgroundColor: lightCream,
         title: Text(title, style: const TextStyle(color: brown)),
-        content: Text(msg, style: const TextStyle(color: Colors.black87)),
+        content: Text(msg),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -68,7 +67,8 @@ class ProviderHomeScreen extends StatelessWidget {
         .snapshots();
 
     final userEmail = user.email ?? 'provider';
-    final shortName = userEmail.contains('@') ? userEmail.split('@').first : userEmail;
+    final shortName =
+        userEmail.contains('@') ? userEmail.split('@').first : userEmail;
 
     return Scaffold(
       appBar: AppBar(
@@ -76,74 +76,59 @@ class ProviderHomeScreen extends StatelessWidget {
         elevation: 0,
         centerTitle: true,
         title: Image.asset('assets/img/pawpal_logo.png', height: 65),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: brown),
+            onPressed: () async {
+              final ok = await _confirm(
+                context,
+                "Logout",
+                "Sign out and return to login?",
+              );
+              if (ok) {
+                await _logout(context);
+              }
+            },
+          ),
+        ],
       ),
       backgroundColor: lightCream,
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // ======= Header card (same style as admin) =======
-            Stack(
-              children: [
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: brown,
-                    borderRadius: BorderRadius.circular(20),
+            // ===== HEADER =====
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: brown,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Provider Home",
+                    style: TextStyle(
+                      color: lightCream,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "Provider Home",
-                        style: TextStyle(
-                          color: lightCream,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        "Hello $shortName 👋",
-                        style: const TextStyle(
-                          color: lightCream,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      const Text(
-                        "Manage your shops and services",
-                        style: TextStyle(color: lightCream),
-                      ),
-                    ],
+                  const SizedBox(height: 8),
+                  Text(
+                    "Hello $shortName 👋",
+                    style: const TextStyle(
+                      color: lightCream,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-
-                // ======= Logout (top right, no circle, cream icon) =======
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: IconButton(
-                    icon: const Icon(Icons.logout, color: lightCream),
-                    tooltip: "Logout",
-                    onPressed: () async {
-                      final ok = await _confirm(
-                        context,
-                        "Logout",
-                        "Are you sure you want to log out?",
-                      );
-                      if (ok) {
-                        await _logout(context);
-                      }
-                    },
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
 
-            const SizedBox(height: 18),
+            const SizedBox(height: 20),
 
             const Text(
               "Your shops",
@@ -151,139 +136,222 @@ class ProviderHomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            // ======= Shops list =======
+            // ===== SHOPS LIST =====
             StreamBuilder<QuerySnapshot>(
               stream: myShopsStream,
               builder: (context, snap) {
                 if (snap.connectionState == ConnectionState.waiting) {
-                  return const Padding(
-                    padding: EdgeInsets.only(top: 24),
-                    child: Center(child: CircularProgressIndicator()),
-                  );
-                }
-                if (snap.hasError) {
-                  return Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Text("Error: ${snap.error}"),
-                  );
+                  return const Center(child: CircularProgressIndicator());
                 }
 
                 final docs = snap.data?.docs ?? [];
                 if (docs.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.only(top: 10),
-                    child: Text(
-                      "No shops yet.\nTap + to add your first shop.",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.black54),
-                    ),
-                  );
+                  return const Text("No shops yet.");
                 }
 
                 return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: docs.map((d) {
                     final shopId = d.id;
                     final data = d.data() as Map<String, dynamic>;
+                    final name = data['name'] ?? 'Unnamed';
 
-                    final name = (data['name'] ?? 'Unnamed').toString();
-                    final category = (data['category'] ?? '').toString();
-                    final isPublished = (data['isPublished'] ?? true) == true;
-
-                    return Container(
-                      width: double.infinity,
-                      margin: const EdgeInsets.only(bottom: 14),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: Colors.black12),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x14000000),
-                            blurRadius: 6,
-                            offset: Offset(0, 3),
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // ===== SHOP CARD =====
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(color: Colors.black12),
                           ),
-                        ],
-                      ),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 10,
-                        ),
-                        title: Text(
-                          name,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        subtitle: Text(
-                          "Category: $category • ${isPublished ? "Published" : "Hidden"}",
-                        ),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => ManageServicesScreen(shopId: shopId),
+                          child: ListTile(
+                            title: Text(
+                              name,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold),
                             ),
-                          );
-                        },
-                        trailing: PopupMenuButton<String>(
-                          onSelected: (v) async {
-                            if (v == "services") {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => ManageServicesScreen(shopId: shopId),
-                                ),
-                              );
-                            } else if (v == "edit") {
+                            subtitle: Text(data['category'] ?? ''),
+                            onTap: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) =>
-                                      ProviderEditShopScreen(shopId: shopId),
+                                      ManageServicesScreen(shopId: shopId),
                                 ),
                               );
-                            } else if (v == "toggle") {
-                              await FirebaseFirestore.instance
-                                  .collection('shops')
-                                  .doc(shopId)
-                                  .update({
-                                'isPublished': !isPublished,
-                                'updatedAt': FieldValue.serverTimestamp(),
-                              });
-                            } else if (v == "delete") {
-                              final ok = await _confirm(
-                                context,
-                                "Delete Shop",
-                                "Delete shop '$name'? This cannot be undone.",
-                              );
-                              if (!ok) return;
-
-                              await FirebaseFirestore.instance
-                                  .collection('shops')
-                                  .doc(shopId)
-                                  .delete();
-                            }
-                          },
-                          itemBuilder: (_) => [
-                            const PopupMenuItem(
-                              value: "services",
-                              child: Text("Manage Services"),
+                            },
+                            trailing: PopupMenuButton<String>(
+                              onSelected: (v) async {
+                                if (v == "edit") {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          ProviderEditShopScreen(
+                                              shopId: shopId),
+                                    ),
+                                  );
+                                } else if (v == "delete") {
+                                  final ok = await _confirm(
+                                    context,
+                                    "Delete Shop",
+                                    "Delete this shop?",
+                                  );
+                                  if (ok) {
+                                    await FirebaseFirestore.instance
+                                        .collection('shops')
+                                        .doc(shopId)
+                                        .delete();
+                                  }
+                                }
+                              },
+                              itemBuilder: (_) => const [
+                                PopupMenuItem(
+                                    value: "edit", child: Text("Edit Shop")),
+                                PopupMenuItem(
+                                    value: "delete",
+                                    child: Text("Delete Shop")),
+                              ],
                             ),
-                            const PopupMenuItem(
-                              value: "edit",
-                              child: Text("Edit Shop"),
-                            ),
-                            PopupMenuItem(
-                              value: "toggle",
-                              child: Text(isPublished ? "Unpublish" : "Publish"),
-                            ),
-                            const PopupMenuItem(
-                              value: "delete",
-                              child: Text("Delete Shop"),
-                            ),
-                          ],
+                          ),
                         ),
-                      ),
+
+                        // ===== UPCOMING APPOINTMENTS =====
+                        StreamBuilder<QuerySnapshot>(
+                          stream: FirebaseFirestore.instance
+                              .collection('shops')
+                              .doc(shopId)
+                              .collection('appointments')
+                              .where('status', isEqualTo: 'upcoming')
+                              .snapshots(), // 🔥 ORDER BY REMOVED
+                          builder: (context, snap) {
+                            if (!snap.hasData ||
+                                snap.data!.docs.isEmpty) {
+                              return const SizedBox();
+                            }
+
+                            return Padding(
+                              padding:
+                                  const EdgeInsets.fromLTRB(24, 6, 0, 16),
+                              child: Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.stretch,
+                                children: [
+                                  const Padding(
+                                    padding:
+                                        EdgeInsets.only(left: 4, bottom: 8),
+                                    child: Text(
+                                      "Upcoming Appointments",
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.black54,
+                                      ),
+                                    ),
+                                  ),
+
+                                  ...snap.data!.docs.map((doc) {
+                                    final a =
+                                        doc.data() as Map<String, dynamic>;
+
+                                    return Container(
+                                      margin:
+                                          const EdgeInsets.only(bottom: 10),
+                                      padding:
+                                          const EdgeInsets.all(14),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius:
+                                            BorderRadius.circular(16),
+                                        border: Border.all(
+                                            color: Colors.black12),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            a['serviceName'],
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            "Pet: ${a['pet']['name']}",
+                                            style: const TextStyle(
+                                                color: Colors.black54),
+                                          ),
+                                          Text(
+                                            "Time: ${a['time']}",
+                                            style: const TextStyle(
+                                                color: Colors.black54),
+                                          ),
+                                          const SizedBox(height: 8),
+
+                                          Align(
+                                            alignment:
+                                                Alignment.centerRight,
+                                            child: TextButton(
+                                              onPressed: () async {
+                                                final ok = await _confirm(
+                                                  context,
+                                                  "Cancel Appointment",
+                                                  "Cancel this appointment for the customer?",
+                                                );
+                                                if (!ok) return;
+
+                                                final clientUid =
+                                                    a['userId'];
+                                                final bookingId = doc.id;
+
+                                                final firestore =
+                                                    FirebaseFirestore.instance;
+
+                                                await firestore
+                                                    .collection('shops')
+                                                    .doc(shopId)
+                                                    .collection(
+                                                        'appointments')
+                                                    .doc(bookingId)
+                                                    .update({
+                                                  'status': 'cancelled'
+                                                });
+
+                                                await firestore
+                                                    .collection('users')
+                                                    .doc(clientUid)
+                                                    .collection('bookings')
+                                                    .doc(bookingId)
+                                                    .update({
+                                                  'status': 'cancelled'
+                                                });
+
+                                                await firestore
+                                                    .collection('bookings')
+                                                    .doc(bookingId)
+                                                    .delete();
+                                              },
+                                              child: const Text(
+                                                "Cancel",
+                                                style: TextStyle(
+                                                    color: Colors.red),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }).toList(),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ],
                     );
                   }).toList(),
                 );
@@ -293,14 +361,14 @@ class ProviderHomeScreen extends StatelessWidget {
         ),
       ),
 
-      // ======= Floating + (same as your screenshot) =======
       floatingActionButton: FloatingActionButton(
         backgroundColor: brown,
-        foregroundColor: Colors.white,
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const ProviderAddShopScreen()),
+            MaterialPageRoute(
+              builder: (_) => const ProviderAddShopScreen(),
+            ),
           );
         },
         child: const Icon(Icons.add),

@@ -13,6 +13,8 @@ class BookingConfirmationScreen extends StatelessWidget {
   final DateTime date;
   final String time;
   final String? notes;
+  final String shopId;
+
 
   const BookingConfirmationScreen({
     super.key,
@@ -24,6 +26,7 @@ class BookingConfirmationScreen extends StatelessWidget {
     required this.date,
     required this.time,
     this.notes,
+    required this.shopId,
   });
 
   String _formatDate(DateTime d) {
@@ -32,6 +35,7 @@ class BookingConfirmationScreen extends StatelessWidget {
   Map<String, dynamic> _bookingData(String uid) {
   return {
     'userId': uid,
+    'shopId': shopId,
     'serviceName': serviceName,
     'storeName': storeName,
     'storeAddress': storeAddress,
@@ -176,26 +180,36 @@ Container(
 
   try {
     await firestore.runTransaction((tx) async {
-      final slotRef = firestore.collection('bookings').doc(bookingId);
+  final slotRef = firestore.collection('bookings').doc(bookingId);
 
-      final slotSnap = await tx.get(slotRef);
-      if (slotSnap.exists) {
-        throw Exception('Slot already booked');
-      }
+  if ((await tx.get(slotRef)).exists) {
+    throw Exception('Slot already booked');
+  }
 
-      // Save global booking (locks the slot)
-      tx.set(slotRef, _bookingData(user.uid));
+  
+  tx.set(slotRef, _bookingData(user.uid));
 
-      // Save under user
-      tx.set(
-        firestore
-            .collection('users')
-            .doc(user.uid)
-            .collection('bookings')
-            .doc(),
-        _bookingData(user.uid),
-      );
-    });
+  
+  tx.set(
+    firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('bookings')
+        .doc(bookingId),
+    _bookingData(user.uid),
+  );
+
+  
+  tx.set(
+    firestore
+        .collection('shops')
+        .doc(shopId) 
+        .collection('appointments')
+        .doc(bookingId),
+    _bookingData(user.uid),
+  );
+});
+
 
     Navigator.popUntil(context, (route) => route.isFirst);
   } catch (e) {

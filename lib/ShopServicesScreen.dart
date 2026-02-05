@@ -187,6 +187,7 @@ class ShopServicesScreen extends StatelessWidget {
                                   price: service.price.toInt(),
                                   storeName: shopName,
                                   storeAddress: storeAddress,
+                                  shopId: shopId,
                                 ),
                               ),
                             );

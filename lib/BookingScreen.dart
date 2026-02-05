@@ -16,6 +16,8 @@ class BookAppointmentScreen extends StatefulWidget {
   final int price;
   final String storeName;
   final String storeAddress;
+  final String shopId;
+
 
   const BookAppointmentScreen({
     super.key,
@@ -23,6 +25,7 @@ class BookAppointmentScreen extends StatefulWidget {
     required this.price,
     required this.storeName,
     required this.storeAddress,
+    required this.shopId,
   });
 
   @override
@@ -198,6 +201,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                         date: selectedDate!,
                         time: selectedTime!,
                         notes: notesController.text,
+                        shopId: widget.shopId,
                       ),
                     ),
                   );
