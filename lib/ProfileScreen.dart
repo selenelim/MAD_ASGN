@@ -1,95 +1,101 @@
-
-import 'package:draft_asgn/MyAppointmentsScreen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:draft_asgn/HomeScreen.dart';
+import 'package:draft_asgn/MyAppointmentsScreen.dart';
+import 'package:draft_asgn/EditProfileScreen.dart';
+import 'package:draft_asgn/LogInScreen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  String userName = '';
+  String userEmail = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserInfo();
+  }
+
+  void _loadUserInfo() {
+    final user = FirebaseAuth.instance.currentUser;
+
+    setState(() {
+      userName = user?.displayName ?? user?.email?.split('@').first ?? 'User';
+
+      userEmail = user?.email ?? '';
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      
-      appBar: AppBar(
-        
-        title: const Text('My Profile'),
-      ),
+      appBar: AppBar(title: const Text('My Profile')),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
             const SizedBox(height: 20),
 
-            // Profile picture placeholder
+            // Profile picture
             CircleAvatar(
               radius: 50,
               backgroundColor: Colors.grey[300],
-              child: const Icon(
-                Icons.person,
-                size: 50,
-                color: Colors.white,
-              ),
+              child: const Icon(Icons.person, size: 50, color: Colors.white),
             ),
 
             const SizedBox(height: 16),
 
-            // Username placeholder
-             Text(
-              'Your Name',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleLarge,
-            ),
+            Text(userName, style: Theme.of(context).textTheme.titleLarge),
 
             const SizedBox(height: 4),
 
-            // Email placeholder
-             Text(
-              'email@example.com',
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall,
-            ),
+            Text(userEmail, style: Theme.of(context).textTheme.bodySmall),
 
             const SizedBox(height: 30),
 
-            // Info cards (UI only)
-            _profileItem(context,
+            _profileItem(
+              context,
               icon: Icons.edit,
               label: 'Edit Profile',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+                );
+              },
             ),
-            _profileItem(context,
-              icon: Icons.lock,
-              label: 'Change Password',
-            ),
-            _profileItem(context,
-  icon: Icons.calendar_month,
-  label: 'My Appointments',
-  onTap: () {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => const MyAppointmentsScreen(),
-    ),
-  );
-},
 
-),
-
-            _profileItem(context,
-              icon: Icons.settings,
-              label: 'Settings',
+            _profileItem(
+              context,
+              icon: Icons.calendar_month,
+              label: 'My Appointments',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const MyAppointmentsScreen(),
+                  ),
+                );
+              },
             ),
-            
+            _profileItem(context, icon: Icons.settings, label: 'Settings'),
 
             const Spacer(),
 
-            // Logout button (UI only)
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {}, // no function yet
-                
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  );
+                },
                 child: const Text('Logout'),
               ),
             ),
@@ -99,38 +105,31 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  static Widget _profileItem(BuildContext context,{
-  required IconData icon,
-  required String label,
-  VoidCallback? onTap,
-}) {
-  return GestureDetector(
-    onTap: onTap,
-    child: Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+  Widget _profileItem(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    VoidCallback? onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: Theme.of(context).appBarTheme.backgroundColor),
+            const SizedBox(width: 12),
+            Text(label, style: Theme.of(context).textTheme.bodyMedium),
+            const Spacer(),
+            const Icon(Icons.chevron_right, color: Colors.grey),
+          ],
+        ),
       ),
-      child: Row(
-        children: [
-          Icon(icon, color: Theme.of(context)
-                  .appBarTheme
-                  .backgroundColor,),
-          const SizedBox(width: 12),
-          Text(
-            label,
-            style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-          ),
-          const Spacer(),
-          const Icon(Icons.chevron_right, color: Colors.grey),
-        ],
-      ),
-    ),
-  );
-}
-
+    );
+  }
 }

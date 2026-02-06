@@ -67,7 +67,8 @@ class WelcomeScreen extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   'Your trusted partner for pet grooming, vaccinations,\nand wellness appointments',
-                  style: Theme.of(context).textTheme.bodySmall,
+                  style: Theme.of(context).textTheme.bodySmall
+                  ,
                   textAlign: TextAlign.center,
                 ),
 

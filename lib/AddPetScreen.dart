@@ -254,8 +254,7 @@ class _AddPetScreenState extends State<AddPetScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 🔒 EVERYTHING BELOW UNCHANGED STRUCTURALLY
-                  // (buttons, fields, layout all intact)
+             
 
                   // Photo section
                   Center(
