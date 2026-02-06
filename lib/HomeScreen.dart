@@ -135,22 +135,38 @@ class _HomeScreenState extends State<HomeScreen> {
                 itemBuilder: (_) => [
                   const PopupMenuItem(
                     value: 'profile',
-                    child: Text('My Profile'),
+                    child: ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(Icons.person),
+                      title: Text('My Profile'),
+                    )
                   ),
                   if (userRole == 'user')
                     const PopupMenuItem(
                       value: 'register_business',
-                      child: Text('Register Business'),
+                      child: ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: Icon(Icons.store),
+                        title: Text('Register Business'),
+                      )
                     ),
                   if (userRole == 'provider')
                     const PopupMenuItem(
                       value: 'manage_shop',
-                      child: Text('Manage My Shops'),
+                      child: ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: Icon(Icons.store),
+                        title: Text('Manage Shop'),
+                      )
                     ),
-                  const PopupMenuDivider(),
+                  
                   const PopupMenuItem(
                     value: 'logout',
-                    child: Text('Logout'),
+                    child: ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(Icons.logout),
+                      title: Text('Logout'),
+                    )
                   ),
                 ],
               ),

@@ -134,24 +134,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     final userEmail = FirebaseAuth.instance.currentUser?.email ?? 'admin';
 
     return Scaffold(
-      
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Stack(
-              children: [
-                _adminHeader(context, userEmail),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: IconButton(
-                    icon: const Icon(Icons.logout),
-                    onPressed: () => _logout(context),
-                  ),
-                ),
-              ],
-            ),
+            _adminHeader(context, userEmail),
 
             const SizedBox(height: 18),
 
@@ -193,8 +180,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     return _ApplicationCard(
                       data: d,
                       status: _status,
-                      onApprove:
-                          _status == 'pending' ? () => _approve(doc, context) : null,
+                      onApprove: _status == 'pending'
+                          ? () => _approve(doc, context)
+                          : null,
                       onReject: _status == 'pending'
                           ? () => _promptReject(context, doc.reference)
                           : null,
@@ -212,19 +200,43 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
+  // ================= HEADER (UPDATED) =================
+
   Widget _adminHeader(BuildContext context, String email) {
     final theme = Theme.of(context);
+    final name = email.contains('@') ? email.split('@').first : email;
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: theme.colorScheme.primary,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Image.asset(
+                'assets/img/pawpal_logo_cream.png',
+                height: 45,
+              ),
+
+              CircleAvatar(
+                backgroundColor: theme.colorScheme.surface,
+                child: IconButton(
+                  icon: Icon(Icons.logout, color: theme.colorScheme.primary),
+                  onPressed: () => _logout(context),
+                  tooltip: "Logout",
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 14),
+
           Text(
             "Admin Dashboard",
             style: theme.textTheme.titleMedium?.copyWith(
@@ -232,24 +244,29 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
+
           Text(
-            "Hello ${email.split('@').first} 👋",
+            "Hello $name 👋",
             style: theme.textTheme.titleLarge?.copyWith(
               color: theme.colorScheme.onPrimary,
+              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 4),
+
           Text(
             "Review provider applications",
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onPrimary,
+              color: theme.colorScheme.onPrimary.withOpacity(0.95),
             ),
           ),
         ],
       ),
     );
   }
+
+  // ================= TABS =================
 
   Widget _statusTabs(BuildContext context) {
     final theme = Theme.of(context);
@@ -263,9 +280,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 12),
             decoration: BoxDecoration(
-              color: active
-                  ? theme.colorScheme.primary
-                  : theme.colorScheme.surface,
+              color: active ? theme.colorScheme.primary : theme.colorScheme.surface,
               borderRadius: BorderRadius.circular(22),
               border: Border.all(
                 color: theme.colorScheme.primary.withOpacity(0.25),

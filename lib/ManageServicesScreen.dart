@@ -24,6 +24,10 @@ class ManageServicesScreen extends StatelessWidget {
         elevation: 0,
         centerTitle: true,
         title: Image.asset('assets/img/pawpal_logo.png', height: 65),
+        iconTheme: IconThemeData(
+          color: theme.colorScheme.primary,
+          size: 26
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -266,7 +270,12 @@ class _AddEditServiceScreenState extends State<AddEditServiceScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        title: Text(isEdit ? "Edit Service" : "Add Service"),
+        title: Image.asset('assets/img/pawpal_logo.png', height: 65),
+        iconTheme: IconThemeData(
+          color: theme.colorScheme.primary,
+          size: 26
+        ),
+        
       ),
       body: loading
           ? const Center(child: CircularProgressIndicator())

@@ -48,7 +48,9 @@ class ProviderHomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final user = FirebaseAuth.instance.currentUser;
+
     if (user == null) {
       return const Scaffold(body: Center(child: Text("Please log in.")));
     }
@@ -59,67 +61,33 @@ class ProviderHomeScreen extends StatelessWidget {
         .snapshots();
 
     final userEmail = user.email ?? 'provider';
-    final shortName = userEmail.contains('@')
-        ? userEmail.split('@').first
-        : userEmail;
+    final shortName = userEmail.contains('@') ? userEmail.split('@').first : userEmail;
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        title: Image.asset('assets/img/pawpal_logo.png', height: 65),
-        actions: [
-          IconButton(
-            icon:  Icon(Icons.logout,color: Color.fromRGBO(82, 45, 11, 1), ),
-            onPressed: () async {
-              final ok = await _confirm(
-                context,
-                "Logout",
-                "Sign out and return to login?",
-              );
-              if (ok) {
-                await _logout(context);
-              }
-            },
-          ),
-        ],
-      ),
-
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // ===== HEADER =====
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Theme.of(context).appBarTheme.backgroundColor,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Provider Home",
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).scaffoldBackgroundColor,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    "Hello $shortName 👋",
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: Theme.of(context).scaffoldBackgroundColor,
-                    ),
-                  ),
-                ],
-              ),
+            // ===== HEADER CARD (UPDATED) =====
+            _providerHeader(
+              context: context,
+              theme: theme,
+              shortName: shortName,
+              onLogout: () async {
+                final ok = await _confirm(
+                  context,
+                  "Logout",
+                  "Sign out and return to login?",
+                );
+                if (ok) {
+                  await _logout(context);
+                }
+              },
             ),
 
             const SizedBox(height: 20),
 
-            Text("Your shops", style: Theme.of(context).textTheme.titleLarge),
+            Text("Your shops", style: theme.textTheme.titleLarge),
             const SizedBox(height: 12),
 
             // ===== SHOPS LIST =====
@@ -148,24 +116,20 @@ class ProviderHomeScreen extends StatelessWidget {
                         Container(
                           margin: const EdgeInsets.only(bottom: 6),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: theme.colorScheme.surface,
                             borderRadius: BorderRadius.circular(18),
-                            border: Border.all(color: Colors.black12),
                           ),
                           child: ListTile(
                             title: Text(
                               name,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
+                              style: const TextStyle(fontWeight: FontWeight.bold),
                             ),
                             subtitle: Text(data['category'] ?? ''),
                             onTap: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) =>
-                                      ManageServicesScreen(shopId: shopId),
+                                  builder: (_) => ManageServicesScreen(shopId: shopId),
                                 ),
                               );
                             },
@@ -175,9 +139,7 @@ class ProviderHomeScreen extends StatelessWidget {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (_) => ProviderEditShopScreen(
-                                        shopId: shopId,
-                                      ),
+                                      builder: (_) => ProviderEditShopScreen(shopId: shopId),
                                     ),
                                   );
                                 } else if (v == "delete") {
@@ -195,14 +157,8 @@ class ProviderHomeScreen extends StatelessWidget {
                                 }
                               },
                               itemBuilder: (_) => const [
-                                PopupMenuItem(
-                                  value: "edit",
-                                  child: Text("Edit Shop"),
-                                ),
-                                PopupMenuItem(
-                                  value: "delete",
-                                  child: Text("Delete Shop"),
-                                ),
+                                PopupMenuItem(value: "edit", child: Text("Edit Shop")),
+                                PopupMenuItem(value: "delete", child: Text("Delete Shop")),
                               ],
                             ),
                           ),
@@ -215,50 +171,39 @@ class ProviderHomeScreen extends StatelessWidget {
                               .doc(shopId)
                               .collection('appointments')
                               .where('status', isEqualTo: 'upcoming')
-                              .snapshots(), //
+                              .snapshots(),
                           builder: (context, snap) {
                             if (!snap.hasData || snap.data!.docs.isEmpty) {
                               return const SizedBox();
                             }
 
                             return Padding(
-                              padding: EdgeInsets.fromLTRB(24, 6, 0, 16),
+                              padding: const EdgeInsets.fromLTRB(24, 6, 0, 16),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
                                   Padding(
-                                    padding: EdgeInsets.only(
-                                      left: 4,
-                                      bottom: 8,
-                                    ),
+                                    padding: const EdgeInsets.only(left: 4, bottom: 8),
                                     child: Text(
                                       "Upcoming Appointments",
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.bodyMedium,
+                                      style: theme.textTheme.bodyMedium,
                                     ),
                                   ),
-
                                   ...snap.data!.docs.map((doc) {
-                                    final a =
-                                        doc.data() as Map<String, dynamic>;
+                                    final a = doc.data() as Map<String, dynamic>;
 
                                     return Container(
                                       margin: const EdgeInsets.only(bottom: 10),
                                       padding: const EdgeInsets.all(14),
                                       decoration: BoxDecoration(
-                                        color: Colors.white,
+                                        color: theme.colorScheme.surface,
                                         borderRadius: BorderRadius.circular(16),
-                                        border: Border.all(
-                                          color: Colors.black12,
-                                        ),
                                       ),
                                       child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
+                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            a['serviceName'],
+                                            a['serviceName'] ?? '',
                                             style: const TextStyle(
                                               fontWeight: FontWeight.bold,
                                               fontSize: 16,
@@ -266,16 +211,12 @@ class ProviderHomeScreen extends StatelessWidget {
                                           ),
                                           const SizedBox(height: 4),
                                           Text(
-                                            "Pet: ${a['pet']['name']}",
-                                            style: const TextStyle(
-                                              color: Colors.black54,
-                                            ),
+                                            "Pet: ${(a['pet']?['name'] ?? '')}",
+                                            style: const TextStyle(color: Colors.black54),
                                           ),
                                           Text(
-                                            "Time: ${a['time']}",
-                                            style: const TextStyle(
-                                              color: Colors.black54,
-                                            ),
+                                            "Time: ${a['time'] ?? ''}",
+                                            style: const TextStyle(color: Colors.black54),
                                           ),
                                           const SizedBox(height: 8),
 
@@ -292,27 +233,21 @@ class ProviderHomeScreen extends StatelessWidget {
 
                                                 final clientUid = a['userId'];
                                                 final bookingId = doc.id;
-
-                                                final firestore =
-                                                    FirebaseFirestore.instance;
+                                                final firestore = FirebaseFirestore.instance;
 
                                                 await firestore
                                                     .collection('shops')
                                                     .doc(shopId)
                                                     .collection('appointments')
                                                     .doc(bookingId)
-                                                    .update({
-                                                      'status': 'cancelled',
-                                                    });
+                                                    .update({'status': 'cancelled'});
 
                                                 await firestore
                                                     .collection('users')
                                                     .doc(clientUid)
                                                     .collection('bookings')
                                                     .doc(bookingId)
-                                                    .update({
-                                                      'status': 'cancelled',
-                                                    });
+                                                    .update({'status': 'cancelled'});
 
                                                 await firestore
                                                     .collection('bookings')
@@ -321,9 +256,7 @@ class ProviderHomeScreen extends StatelessWidget {
                                               },
                                               child: const Text(
                                                 "Cancel",
-                                                style: TextStyle(
-                                                  color: Colors.red,
-                                                ),
+                                                style: TextStyle(color: Colors.red),
                                               ),
                                             ),
                                           ),
@@ -347,9 +280,8 @@ class ProviderHomeScreen extends StatelessWidget {
       ),
 
       floatingActionButton: FloatingActionButton(
-         backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
-  foregroundColor: Theme.of(context).scaffoldBackgroundColor,
-       
+        backgroundColor: theme.appBarTheme.backgroundColor,
+        foregroundColor: theme.scaffoldBackgroundColor,
         onPressed: () {
           Navigator.push(
             context,
@@ -357,6 +289,76 @@ class ProviderHomeScreen extends StatelessWidget {
           );
         },
         child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  // ===== HEADER WIDGET (NEW) =====
+  Widget _providerHeader({
+    required BuildContext context,
+    required ThemeData theme,
+    required String shortName,
+    required VoidCallback onLogout,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Image.asset(
+                'assets/img/pawpal_logo_cream.png',
+                height: 45,
+              ),
+
+              PopupMenuButton<String>(
+                icon: CircleAvatar(
+                  backgroundColor: theme.colorScheme.surface,
+                  child: Icon(Icons.person, color: theme.colorScheme.primary),
+                ),
+                onSelected: (v) async {
+                  if (v == 'logout') onLogout();
+                },
+                itemBuilder: (_) => const [
+                  PopupMenuItem(
+                    value: 'logout',
+                    child: ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(
+                        Icons.logout,
+                        color: Colors.black
+                      ),
+                      title: const Text('Logout'),
+                    )
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            "Provider Home",
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: theme.colorScheme.onPrimary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            "Hello $shortName 👋",
+            style: theme.textTheme.titleLarge?.copyWith(
+              color: theme.colorScheme.onPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }
