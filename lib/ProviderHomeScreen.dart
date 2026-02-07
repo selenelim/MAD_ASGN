@@ -211,13 +211,21 @@ class ProviderHomeScreen extends StatelessWidget {
                                           ),
                                           const SizedBox(height: 4),
                                           Text(
-                                            "Pet: ${(a['pet']?['name'] ?? '')}",
-                                            style: const TextStyle(color: Colors.black54),
-                                          ),
-                                          Text(
-                                            "Time: ${a['time'] ?? ''}",
-                                            style: const TextStyle(color: Colors.black54),
-                                          ),
+  "Pet: ${(a['pet']?['name'] ?? '')}",
+  style: const TextStyle(color: Colors.black54),
+),
+Text(
+  "Date: ${(a['date'] as Timestamp).toDate().day}/"
+  "${(a['date'] as Timestamp).toDate().month}/"
+  "${(a['date'] as Timestamp).toDate().year}",
+  style: const TextStyle(color: Colors.black54),
+),
+
+Text(
+  "Time: ${a['time'] ?? ''}",
+  style: const TextStyle(color: Colors.black54),
+),
+
                                           const SizedBox(height: 8),
 
                                           Align(

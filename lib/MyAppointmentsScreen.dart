@@ -11,7 +11,6 @@ class MyAppointmentsScreen extends StatelessWidget {
     final user = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
-      
       appBar: AppBar(
         title: const Text('My Appointments'),
       ),
@@ -38,10 +37,7 @@ class MyAppointmentsScreen extends StatelessWidget {
                   return Center(
                     child: Text(
                       'No appointments yet 🐾',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodyMedium
-                          ,
+                      style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   );
                 }
@@ -182,7 +178,7 @@ class MyAppointmentsScreen extends StatelessWidget {
     );
   }
 
-  // ---------------- CANCEL LOGIC ----------------
+  // ---------------- CANCEL LOGIC (FIXED) ----------------
 
   static Future<void> _cancelAppointment(
     BuildContext context,
@@ -191,11 +187,25 @@ class MyAppointmentsScreen extends StatelessWidget {
     final data = doc.data() as Map<String, dynamic>;
     final firestore = FirebaseFirestore.instance;
 
-    final bookingId =
-        '${data['storeName']}_${(data['date'] as Timestamp).toDate().toIso8601String().split('T')[0]}_${data['time']}';
+    final bookingId = doc.id; // ✅ SAME ID AS PROVIDER
+    final shopId = data['shopId']; // MUST EXIST
+    final userId = FirebaseAuth.instance.currentUser!.uid;
 
     try {
-      await doc.reference.update({'status': 'cancelled'});
+      await firestore
+          .collection('users')
+          .doc(userId)
+          .collection('bookings')
+          .doc(bookingId)
+          .update({'status': 'cancelled'});
+
+      await firestore
+          .collection('shops')
+          .doc(shopId)
+          .collection('appointments')
+          .doc(bookingId)
+          .update({'status': 'cancelled'});
+
       await firestore.collection('bookings').doc(bookingId).delete();
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -208,4 +218,3 @@ class MyAppointmentsScreen extends StatelessWidget {
     }
   }
 }
-
