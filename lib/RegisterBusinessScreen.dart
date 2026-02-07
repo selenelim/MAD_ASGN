@@ -91,6 +91,9 @@ class _RegisterBusinessScreenState extends State<RegisterBusinessScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
+        iconTheme: const IconThemeData(
+          color: Colors.black, // 👈 back button color
+        ),
         title: Image.asset(
           'assets/img/pawpal_logo.png',
           height: 65,

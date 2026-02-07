@@ -59,6 +59,10 @@ class PetProfileScreen extends StatelessWidget {
          
           appBar: AppBar(
             centerTitle: true,
+            backgroundColor: Colors.transparent,
+            iconTheme: const IconThemeData(
+              color: Colors.black
+            ),
             title: Image.asset(
               'assets/img/pawpal_logo.png',
               height: 65,
