@@ -2,7 +2,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:draft_asgn/AddReviewScreen.dart';
 import 'package:draft_asgn/BookingScreen.dart';
-import 'package:draft_asgn/HomeScreen.dart';
 import 'package:draft_asgn/ManageServicesScreen.dart';
 import 'package:draft_asgn/models/service.dart';
 import 'package:firebase_auth/firebase_auth.dart';

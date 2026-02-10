@@ -1,8 +1,9 @@
+//Supports 2 modes - > Add Pet and Edit existing pet
+
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:draft_asgn/HomeScreen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -24,23 +25,28 @@ class AddPetScreen extends StatefulWidget {
 class _AddPetScreenState extends State<AddPetScreen> {
   final _formKey = GlobalKey<FormState>();
 
+  //TextFields -> Use these controllers to read/write text input
+
   final TextEditingController nameController = TextEditingController();
   final TextEditingController breedController = TextEditingController();
   final TextEditingController ageController = TextEditingController();
   final TextEditingController notesController = TextEditingController();
 
-  String? species;
-  String? size;
+  //Button/Selections
 
-  bool isLoading = false;
+  String? species;                                  //Dog/Cat
+  String? size;                                     //Small/Medium/Large
+
+  bool isLoading = false;                           //Loading State: When saving to Firestore, disable the button + show spinner.
 
   final ImagePicker _picker = ImagePicker();
-  File? petImage;
-  String? existingBase64;
+  File? petImage;                                   //If user picks a new image
+  String? existingBase64;                           //If editing and pet already has a saved photo
 
-  bool get isEditMode => widget.petId != null;
+  bool get isEditMode => widget.petId != null;                                //if petId not null, edit mode
 
   @override
+  //When open screen in edit mode, pass in existingPetData, then fill form
   void initState() {
     super.initState();
 
@@ -50,12 +56,12 @@ class _AddPetScreenState extends State<AddPetScreen> {
       breedController.text = (data['breed'] ?? '').toString();
       ageController.text = (data['age'] ?? '').toString();
       notesController.text = (data['notes'] ?? '').toString();
-      species = data['species'];
+      species = data['species'];                                              
       size = data['size'];
 
       final pic = data['profilePicBase64'];
-      if (pic is String && pic.isNotEmpty) {
-        existingBase64 = pic;
+      if (pic is String && pic.isNotEmpty) {                      //Base64 is stored as text hence string
+        existingBase64 = pic;                                     //Displays image if there is one else line is skipped and no image is shown
       }
     }
   }
@@ -68,14 +74,14 @@ class _AddPetScreenState extends State<AddPetScreen> {
     notesController.dispose();
     super.dispose();
   }
-
+  //Pick Image
   Future<void> _pickImage() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
       setState(() => petImage = File(image.path));
     }
   }
-
+  //Remove Image -> Pet will have no picture after saving
   void _removePhoto() {
     setState(() {
       petImage = null;
@@ -84,6 +90,8 @@ class _AddPetScreenState extends State<AddPetScreen> {
   }
 
   Future<void> _savePet() async {
+
+    //Validates inputs
     if (!_formKey.currentState!.validate()) return;
 
     if (species == null || size == null) {
@@ -99,18 +107,21 @@ class _AddPetScreenState extends State<AddPetScreen> {
     setState(() => isLoading = true);
 
     String? imageBase64ToSave;
+    //Turn image into base64 (if any)
     if (petImage != null) {
-      final bytes = await petImage!.readAsBytes();
+      final bytes = await petImage!.readAsBytes();    //If new photo->Read Bytes->base64 encode
       imageBase64ToSave = base64Encode(bytes);
     } else {
-      imageBase64ToSave = existingBase64;
+      imageBase64ToSave = existingBase64;             //Keep existing base64 from before
     }
+
+    //Build Firestore Path -> users/{user.uid}/pets
 
     final petsCol = FirebaseFirestore.instance
         .collection('users')
         .doc(user.uid)
         .collection('pets');
-
+    //Build Payload
     final payload = <String, dynamic>{
       'name': nameController.text.trim(),
       'species': species!,
@@ -123,39 +134,39 @@ class _AddPetScreenState extends State<AddPetScreen> {
 
     try {
       if (isEditMode) {
-        await petsCol.doc(widget.petId!).update(payload);
+        await petsCol.doc(widget.petId!).update(payload);               //If editing: Update the existing doc using petId
       } else {
-        await petsCol.add({...payload, 'createdAt': Timestamp.now()});
+        await petsCol.add({...payload, 'createdAt': Timestamp.now()});  //If adding: Create a new doc and attach createdAt
       }
 
-      if (context.mounted) Navigator.pop(context);
-    } catch (e) {
+      if (context.mounted) Navigator.pop(context);                      //Close the page
+    } catch (e) {                                                               //Runs if anyhting fails
       if (context.mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Failed to save pet: $e')));
+            .showSnackBar(SnackBar(content: Text('Failed to save pet: $e')));   //Show a SnackBar error message
       }
-    } finally {
+    } finally {                                                   //Runs no matter what
       if (context.mounted) setState(() => isLoading = false);
     }
   }
-
+  //Button for species and size
   Widget _selectButton({
     required String label,
     required String value,
     required String? groupValue,
     required ValueChanged<String> onSelected,
   }) {
-    final isSelected = value == groupValue;
+    final isSelected = value == groupValue;                   //Checks if button is selected one: Then changes color accordingly
 
     return Expanded(
       child: GestureDetector(
-        onTap: () => onSelected(value),
+        onTap: () => onSelected(value),                       //When tapped, triggers callback to update state and rebuild UI
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(
             color: isSelected
-                ? Theme.of(context).colorScheme.primary
-                : Colors.white,
+                ? Theme.of(context).colorScheme.primary       //Selected
+                : Colors.white,                             //Not Selected
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: Colors.black12),
           ),
@@ -212,14 +223,15 @@ class _AddPetScreenState extends State<AddPetScreen> {
     ImageProvider? previewImage;
 
     if (petImage != null) {
-      previewImage = FileImage(petImage!);
-    } else if (existingBase64 != null) {
-      try {
+      previewImage = FileImage(petImage!);                          //Highest Prio: New picked photo
+    } else if (existingBase64 != null) {                            //Then Existing saved photo (Base64)
+      try {                                                         //Else if no photo -> Show camera icon
         previewImage = MemoryImage(base64Decode(existingBase64!));
       } catch (_) {}
     }
 
     return Scaffold(
+      //AppBar
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -228,6 +240,7 @@ class _AddPetScreenState extends State<AddPetScreen> {
         title: Image.asset('assets/img/pawpal_logo.png', height: 65),
       ),
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      //Main Body -> SingleChildScrollView -> So it wont overflow on smaller screens
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -249,7 +262,7 @@ class _AddPetScreenState extends State<AddPetScreen> {
             ),
             const SizedBox(height: 20),
 
-            Form(
+            Form(                           //Wraps inpputs so _formKey validation works 
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

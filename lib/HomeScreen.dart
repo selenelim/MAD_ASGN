@@ -1,5 +1,4 @@
-import 'dart:convert';
-
+import 'dart:convert';                                            //Used for base64Decode -> For pet profile picture
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:draft_asgn/AddPetScreen.dart';
 import 'package:draft_asgn/BoardingScreen.dart';
@@ -11,10 +10,9 @@ import 'package:draft_asgn/RegisterBusinessScreen.dart';
 import 'package:draft_asgn/TrainingSreen.dart';
 import 'package:draft_asgn/VetScreen.dart';
 import 'package:draft_asgn/ProviderHomeScreen.dart';
-
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart';                //Accessed currently logged-in user
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shared_preferences/shared_preferences.dart';      //Used fpr Remmeber Me logout handling
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,72 +22,72 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  String userName = '';
-  String userRole = 'user';
+  String userName = '';                                   //shown in greeting
+  String userRole = 'user';                               //controls menu options
 
   @override
-  void initState() {
+  void initState() {                                      //Runs once when screen opens, Loads: Display name and role from Firestore
     super.initState();
     _loadUserName();
     _loadUserRole();
   }
-
+  //Load Username
   Future<void> _loadUserName() async {
-    final user = FirebaseAuth.instance.currentUser;
-    setState(() {
+    final user = FirebaseAuth.instance.currentUser;       //gets logged-in user
+    setState(() {                                         //priority: Display Name -> Email prefix -> Fallback:"there"
       userName = user?.displayName ??
           user?.email?.split('@').first ??
           'there';
     });
   }
 
-  Future<void> _loadUserRole() async {
+  Future<void> _loadUserRole() async {                                              //Fetch role from Firestore
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    if (user == null) return;                                                       //safety check
 
     final doc =
-        await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-    final data = doc.data() ?? {};
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).get();   //Reads /users/{uid}
+    final data = doc.data() ?? {};                                                  //prevents null crash
 
-    if (!mounted) return;
-    setState(() => userRole = (data['role'] ?? 'user').toString());
+    if (!mounted) return;                                                           //ensures widget still exists
+    setState(() => userRole = (data['role'] ?? 'user').toString());                 //default role = user
   }
-
+  //Log Out Logic
   Future<void> _logout(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('rememberMe', false);
-    await FirebaseAuth.instance.signOut();
+    await prefs.setBool('rememberMe', false);                         //Clears remember-me flag
+    await FirebaseAuth.instance.signOut();                            //logs out of firebase
 
     if (!context.mounted) return;
-    Navigator.pushAndRemoveUntil(
+    Navigator.pushAndRemoveUntil(                                     //clears navigation stack -> user cannot press back
       context,
       MaterialPageRoute(builder: (_) => const LoginScreen()),
       (_) => false,
     );
   }
-
-  Future<void> _handleMenuSelection(String value) async {
+  //Menu Selection Handler
+  Future<void> _handleMenuSelection(String value) async {                       //Handles popupmenu clicks
     if (value == 'profile') {
       Navigator.push(context,
-          MaterialPageRoute(builder: (_) => const ProfileScreen()));
+          MaterialPageRoute(builder: (_) => const ProfileScreen()));            //go to profile
     } else if (value == 'register_business') {
       Navigator.push(context,
-          MaterialPageRoute(builder: (_) => const RegisterBusinessScreen()));
+          MaterialPageRoute(builder: (_) => const RegisterBusinessScreen()));   //only for normal users
     } else if (value == 'manage_shop') {
       Navigator.push(context,
-          MaterialPageRoute(builder: (_) => const ProviderHomeScreen()));
+          MaterialPageRoute(builder: (_) => const ProviderHomeScreen()));       //only for providers -> but shouldnt need since we use AuthGate to route them
     } else if (value == 'logout') {
       await _logout(context);
     }
   }
-
+  //UI
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
+      body: SafeArea(                                       //Avoids notch/status bar
+        child: SingleChildScrollView(                       //allows scrolling if content overflows
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -131,9 +129,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Icon(Icons.person,
                       color: theme.colorScheme.primary),
                 ),
-                onSelected: _handleMenuSelection,
+                onSelected: _handleMenuSelection,           //calls this function using the values here
                 itemBuilder: (_) => [
-                  const PopupMenuItem(
+                  const PopupMenuItem(                      //Dropdown menu
                     value: 'profile',
                     child: ListTile(
                       contentPadding: EdgeInsets.zero,
@@ -202,7 +200,7 @@ class _HomeScreenState extends State<HomeScreen> {
           style: theme.textTheme.titleLarge,
         ),
         const SizedBox(height: 12),
-        StreamBuilder<QuerySnapshot>(
+        StreamBuilder<QuerySnapshot>(                                     //Listens to Firestore live -> Real-time pets list
           stream: FirebaseFirestore.instance
               .collection('users')
               .doc(user.uid)
@@ -222,7 +220,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: theme.textTheme.bodyMedium,
               );
             }
-
+            //PET CARD
             return Column(
               children: [
                 ...pets.map((pet) {
@@ -232,15 +230,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   if (petData['profilePicBase64'] != null) {
                     try {
                       img = MemoryImage(
-                          base64Decode(petData['profilePicBase64']));
+                          base64Decode(petData['profilePicBase64']));           //Converts Base64 -> Image
                     } catch (_) {}
                   }
 
                   return Card(
                     child: ListTile(
                       leading: CircleAvatar(
-                        backgroundImage: img,
-                        child: img == null ? const Icon(Icons.pets) : null,
+                        backgroundImage: img,                                   //Image if it exists
+                        child: img == null ? const Icon(Icons.pets) : null,     //Else icon
                       ),
                       title: Text(petData['name'] ?? 'Unnamed'),
                       subtitle:
@@ -249,7 +247,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => PetProfileScreen(
+                            builder: (_) => PetProfileScreen(                   //Opens pet profile
                               userId: user.uid,
                               petId: pet.id,
                             ),
@@ -260,6 +258,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   );
                 }),
                 const SizedBox(height: 16),
+                //Add Pet Button
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
@@ -290,11 +289,12 @@ class _HomeScreenState extends State<HomeScreen> {
         Text('Services', style: theme.textTheme.titleLarge),
         const SizedBox(height: 12),
         GridView.count(
-          crossAxisCount: 2,
+          crossAxisCount: 2,                                                            //2 column grid
           shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
+          physics: const NeverScrollableScrollPhysics(),                                //Prevents nested scrolling -> basically telling the widget it is NOT allowed to scroll
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
+          //Grooming/Vet/Boarding/Training CARDS
           children: [
             _ServiceCard(icon: Icons.cut, label: 'Grooming', onTap: () {
               Navigator.push(context,
@@ -319,7 +319,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// ================= SERVICE CARD =================
+// ================= SERVICE CARD =================       -> Reusable UI component
 class _ServiceCard extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -336,7 +336,7 @@ class _ServiceCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Card(
-      child: InkWell(
+      child: InkWell(                                               //Ripple effect + Click Handler
         borderRadius: BorderRadius.circular(20),
         onTap: onTap,
         child: Padding(
@@ -344,7 +344,7 @@ class _ServiceCard extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
+              Container(                                            //Icon background
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.primary,

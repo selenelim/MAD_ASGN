@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:draft_asgn/LogInScreen.dart';
-import 'package:draft_asgn/HomeScreen.dart'; // for your colors (brown/lightCream)
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -9,9 +8,9 @@ class WelcomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       
-      body: SafeArea(
+      body: SafeArea(                                                           //Ensures content doesnt go under the notch
         child: Center(
-          child: SingleChildScrollView(
+          child: SingleChildScrollView(                                         //Makes screen scrollable
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -42,10 +41,10 @@ class WelcomeScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(22),
                     color: Colors.white,
                     boxShadow: const [
-                      BoxShadow(
+                      BoxShadow(                                      //Adds a black shadow
                         color: Colors.black12,
                         blurRadius: 10,
-                        offset: Offset(0, 6),
+                        offset: Offset(0, 6),                         //Shadow drops down by 6px
                       ),
                     ],
                     image: const DecorationImage(
@@ -80,9 +79,9 @@ class WelcomeScreen extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: () {
                       // Use pushReplacement so user can’t go back to welcome
-                      Navigator.pushReplacement(
+                      Navigator.pushReplacement(                                    //Removes this screen from stack
                         context,
-                        MaterialPageRoute(builder: (_) => LoginScreen()),
+                        MaterialPageRoute(builder: (_) => LoginScreen()),           //Routes to Login screen
                       );
                     },
                     child: const Padding(

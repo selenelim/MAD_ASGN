@@ -11,42 +11,43 @@ class AdminDashboardScreen extends StatefulWidget {
 }
 
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
-  String _status = 'pending'; // pending | approved | rejected
+  String _status = 'pending'; // pending | approved | rejected  Default is 'pending'
+  //So when we open the page, we see Pending Applications
 
-  // ================= LOGIC (UNCHANGED) =================
+  //Approve Logic
 
   Future<void> _approve(DocumentSnapshot appDoc, BuildContext context) async {
-    final data = (appDoc.data() as Map<String, dynamic>?) ?? {};
-    final uid = (data['applicantUid'] ?? '').toString();
+    final data = (appDoc.data() as Map<String, dynamic>?) ?? {};                    //Reads its data map
+    final uid = (data['applicantUid'] ?? '').toString();                            //Extracts applicantUid
 
-    if (uid.isEmpty) {
+    if (uid.isEmpty) {                                                              //If application doc doesnt contain UID, stops and shows error
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Missing applicantUid ❌")),
       );
       return;
     }
 
-    final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
-    final appRef = appDoc.reference;
-    final batch = FirebaseFirestore.instance.batch();
-
+    final userRef = FirebaseFirestore.instance.collection('users').doc(uid);      //Points to /users/<uid>
+    final appRef = appDoc.reference;                                              //Points to this application document
+    final batch = FirebaseFirestore.instance.batch();                             //Allows multiple writes to commit together
+    //Batch 1: Set user role as provider
     batch.set(
-      userRef,
+      userRef,                                                                    //Updates user document so user becomes a Provider
       {
         'role': 'provider',
         'providerApproved': true,
         'providerApprovedAt': FieldValue.serverTimestamp(),
       },
-      SetOptions(merge: true),
+      SetOptions(merge: true),                                                    //Wont overwrite entire user document - only merges these fields in
     );
-
-    batch.update(appRef, {
+    //Batch 2: Mark Application as approved
+    batch.update(appRef, {                                                        //Updates application record/s status + timestamps
       'status': 'approved',
       'approvedAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
 
-    await batch.commit();
+    await batch.commit();                                                         //Applies both batch 1 & 2 updates together
 
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -54,13 +55,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       );
     }
   }
-
+  //Reject Logic
   Future<void> _reject(
     DocumentReference appRef,
     BuildContext context,
     String reason,
   ) async {
-    await appRef.update({
+    await appRef.update({                                              //Updates only the application document -> Adds rejection reason + timestamps
       'status': 'rejected',
       'rejectionReason': reason,
       'rejectedAt': FieldValue.serverTimestamp(),
@@ -75,10 +76,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   Future<void> _promptReject(BuildContext context, DocumentReference appRef) async {
-    final ctrl = TextEditingController();
+    final ctrl = TextEditingController();                     //ctrl stores what admin types as reason
     final theme = Theme.of(context);
 
-    final ok = await showDialog<bool>(
+    final ok = await showDialog<bool>(                        //returns ok=true if reject is pressed, ok=false if cancel
       context: context,
       builder: (_) => AlertDialog(
         title: Text(
@@ -104,29 +105,29 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       ),
     );
 
-    if (ok == true) {
-      await _reject(appRef, context, ctrl.text.trim());
+    if (ok == true) {                                             //Reject button pressed
+      await _reject(appRef, context, ctrl.text.trim());           //Calls _reject() -> Reject Logic
     }
   }
 
-  Stream<QuerySnapshot> _streamByStatus() {
-    return FirebaseFirestore.instance
-        .collection('providerApplications')
-        .where('status', isEqualTo: _status)
+  Stream<QuerySnapshot> _streamByStatus() {       //Since it is .snapshots(), the UI updates live when Firestore changes
+    return FirebaseFirestore.instance             //If _status='approved' -> stream shows only approved docs
+        .collection('providerApplications')       //If _status='rejected' -> stream shows only rejected docs
+        .where('status', isEqualTo: _status)      //If _status='pending' -> stream shows only pending docs
         .snapshots();
   }
 
-  Future<void> _logout(BuildContext context) async {
+  Future<void> _logout(BuildContext context) async {            //LogOut -> Signs User ouy
     await FirebaseAuth.instance.signOut();
     if (!context.mounted) return;
-    Navigator.pushAndRemoveUntil(
+    Navigator.pushAndRemoveUntil(                               //Clears navigation stack (so admin cant press back to return)
       context,
-      MaterialPageRoute(builder: (_) => const AuthWrapper()),
+      MaterialPageRoute(builder: (_) => const AuthWrapper()),   //Sends back to AuthWrapper
       (_) => false,
     );
   }
 
-  // ================= UI =================
+  // UI
 
   @override
   Widget build(BuildContext context) {
@@ -151,11 +152,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               style: theme.textTheme.titleMedium,
             ),
             const SizedBox(height: 12),
-
+            //List
             StreamBuilder<QuerySnapshot>(
               stream: _streamByStatus(),
               builder: (context, snap) {
-                if (snap.connectionState == ConnectionState.waiting) {
+                if (snap.connectionState == ConnectionState.waiting) {    //While loading -> Shows Spinner
                   return const Padding(
                     padding: EdgeInsets.only(top: 24),
                     child: Center(child: CircularProgressIndicator()),
@@ -163,7 +164,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 }
 
                 final docs = snap.data?.docs ?? [];
-                if (docs.isEmpty) {
+                if (docs.isEmpty) {                                       //No docs -> Shows "No Applications"
                   return Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(
@@ -172,16 +173,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     ),
                   );
                 }
-
+                //Else
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: docs.map((doc) {
                     final d = (doc.data() as Map<String, dynamic>?) ?? {};
-                    return _ApplicationCard(
+                    return _ApplicationCard(                                    //Converts each Firestore doc into _ApplicationCard()
                       data: d,
                       status: _status,
                       onApprove: _status == 'pending'
-                          ? () => _approve(doc, context)
+                          ? () => _approve(doc, context)                      //Approve/Reject buttons only exist when status is pending
                           : null,
                       onReject: _status == 'pending'
                           ? () => _promptReject(context, doc.reference)
@@ -200,7 +201,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
-  // ================= HEADER (UPDATED) =================
+  // Header -> Admin Email from FirebaseAuth
+  //Displays Logo Image, LogOut icon Button, "Admin Dashboard", "Hello <name> 👋", "Review provider appplications"
 
   Widget _adminHeader(BuildContext context, String email) {
     final theme = Theme.of(context);
@@ -266,7 +268,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
-  // ================= TABS =================
+  //Tabs -> Pill Buttons x3 -> Pending, Approved, Rejected
 
   Widget _statusTabs(BuildContext context) {
     final theme = Theme.of(context);
@@ -275,8 +277,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       final active = _status == value;
       return Expanded(
         child: InkWell(
-          onTap: () => setState(() => _status = value),
-          borderRadius: BorderRadius.circular(22),
+          onTap: () => setState(() => _status = value),                               //Switches it between Pending/Approced/Rejected -> Tap a pill -> _status changes and widget rebuilds
+          borderRadius: BorderRadius.circular(22),                                    //List updates automatically
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 12),
             decoration: BoxDecoration(
@@ -313,8 +315,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 }
 
-// ================= CARD =================
-
+//Application Card
+//Dsiplays Business Name, Category, Phone
+//Approved/Rejected Cards Display only
+//Pending has Approve + Reject buttons
 class _ApplicationCard extends StatelessWidget {
   final Map<String, dynamic> data;
   final String status;
@@ -369,7 +373,7 @@ class _ApplicationCard extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: ElevatedButton.icon(
+                  child: ElevatedButton.icon(           //Approve Button
                     onPressed: onApprove,
                     icon: const Icon(Icons.check),
                     label: const Text("Approve"),
@@ -377,7 +381,7 @@ class _ApplicationCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: OutlinedButton.icon(
+                  child: OutlinedButton.icon(           //Reject Button
                     onPressed: onReject,
                     icon: const Icon(Icons.close),
                     label: const Text("Reject"),
